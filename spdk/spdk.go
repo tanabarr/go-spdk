@@ -68,8 +68,9 @@ func Init() error {
 	//opts.name = "all"
 	//stdio.Stdout.WriteString(C.GoString(opts.name) + "\n")
 	//fmt.Printf("%v\n", *opts.name)
-	rc := C.spdk_env_opts_init(opts)
+	C.spdk_env_opts_init(opts)
 
+	rc := C.spdk_env_init(opts)
 	if err := rc2err("spdk_env_opts_init", rc); err != nil {
 		return err
 	}
