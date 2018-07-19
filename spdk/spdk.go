@@ -10,8 +10,6 @@ package spdk
 // #include "spdk/env.h"
 import "C"
 import (
-	"../stdio"
-	//"fmt"
 	"github.com/pkg/errors"
 )
 
@@ -63,7 +61,7 @@ func rc2err(label string, rc C.int) error {
 }
 
 func Init() error {
-	stdio.Stdout.WriteString("Initializing NVMe Controllers\n")
+	println("Initializing NVMe Driver")
 	opts := &C.struct_spdk_env_opts{}
 	//opts.name = "all"
 	//stdio.Stdout.WriteString(C.GoString(opts.name) + "\n")
@@ -75,6 +73,7 @@ func Init() error {
 		return err
 	}
 
+	println("Initializing NVMe Controllers")
 	// stdio.defer C.free(unsafe.Pointer())
 	// void spdk_env_opts_init(struct spdk_env_opts *opts);
 	return nil
