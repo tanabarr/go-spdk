@@ -14,7 +14,7 @@ import (
 
 /** Returns an failure if rc != 0. If err is already set
  * then it is wrapped, otherwise it is ignored.
- * 
+ *
  * //func rc2err(label string, rc C.int, err error) error {
  */
 func rc2err(label string, rc C.int) error {
@@ -43,7 +43,7 @@ func InitSPDKEnv() error {
 	//fmt.Printf("%v\n", *opts.name)
 	C.spdk_env_opts_init(opts)
 
-    rc := C.spdk_env_init(opts)
+	rc := C.spdk_env_init(opts)
 	if err := rc2err("spdk_env_opts_init", rc); err != nil {
 		return err
 	}
@@ -52,10 +52,10 @@ func InitSPDKEnv() error {
 }
 
 /**
-	println("Initializing NVMe Controllers")
-	// stdio.defer C.free(unsafe.Pointer())
-	// void spdk_env_opts_init(struct spdk_env_opts *opts);
- */
+println("Initializing NVMe Controllers")
+// stdio.defer C.free(unsafe.Pointer())
+// void spdk_env_opts_init(struct spdk_env_opts *opts);
+*/
 
 // spdk_env_opts_init(&opts);
 // opts.name = "hello_world";
