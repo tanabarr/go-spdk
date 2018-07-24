@@ -14,7 +14,7 @@ package spdk
 
 typedef void (*probe_func)();
 void nvme_probe(probe_func f) {
-	f(); // NULL, NULL, NULL, NULL, NULL);
+	f(NULL, NULL, NULL, NULL, NULL);
 }
 */
 import "C"
@@ -65,7 +65,7 @@ func InitSPDKEnv() error {
 
 func NVMeProbe() {
     println("Initializing NVMe Controllers")
-	C.nvme_probe((C.probe_func)(unsafe.Pointer(C.spdk_nvme_probe)))
+    C.nvme_probe((C.probe_func)(unsafe.Pointer(C.spdk_nvme_probe)))
 }
 
 ////int spdk_nvme_probe(const struct spdk_nvme_transport_id *trid,
