@@ -1,8 +1,11 @@
 // Go bindings for SPDK
 package spdk
 
-// #cgo LDFLAGS: -L/usr/local/lib -lspdk
-// #cgo CFLAGS: -I/usr/local/include
+/** lib & include dirs detected from CGO_CFLAGS & CGO_LDFLAGS
+ * env vars.
+ */
+
+// #cgo LDFLAGS: -lspdk
 // #include "stdlib.h"
 // #include "spdk/stdinc.h"
 // #include "spdk/nvme.h"
