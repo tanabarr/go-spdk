@@ -5,13 +5,22 @@ package spdk
  * env vars.
  */
 
-// #cgo LDFLAGS: -lspdk
-// #include "stdlib.h"
-// #include "spdk/stdinc.h"
-// #include "spdk/nvme.h"
-// #include "spdk/env.h"
+/* 
+#cgo LDFLAGS: -lspdk
+#include "stdlib.h"
+#include "spdk/stdinc.h"
+#include "spdk/nvme.h"
+#include "spdk/env.h"
+
+typedef void (*probe_func)();
+void nvme_probe(probe_func f) {
+	f(); // NULL, NULL, NULL, NULL, NULL);
+}
+*/
 import "C"
+
 import (
+	"unsafe"
 	"github.com/pkg/errors"
 )
 
@@ -54,24 +63,11 @@ func InitSPDKEnv() error {
 	return nil
 }
 
-/**
-println("Initializing NVMe Controllers")
-// stdio.defer C.free(unsafe.Pointer())
-// void spdk_env_opts_init(struct spdk_env_opts *opts);
-*/
+func NVMeProbe() {
+    println("Initializing NVMe Controllers")
+	C.nvme_probe((C.probe_func)(unsafe.Pointer(C.spdk_nvme_probe)))
+}
 
-// spdk_env_opts_init(&opts);
-// opts.name = "hello_world";
-// opts.shm_id = 0;
-// if (spdk_env_init(&opts) < 0) {
-// fprintf(stderr, "Unable to initialize SPDK env\n");
-// return 1;
-// }
-//printf("Initializing NVMe Controllers\n");
-
-// func NVMEProbe(mode uint32, uid uint32, gid uint32, group string, size int64) (string, error) {
-//    C.spdk_nvme_probe()
-//
 ////int spdk_nvme_probe(const struct spdk_nvme_transport_id *trid,
 ////            void *cb_ctx,
 ////            spdk_nvme_probe_cb probe_cb,
