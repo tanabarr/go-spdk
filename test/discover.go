@@ -15,5 +15,7 @@ func main() {
 	if err := spdk.InitSPDKEnv(); err != nil {
 		fmt.Printf("Unable to initialise SPDK env (%s)\n", err)
 	}
-	spdk.NVMeProbe()
+	if err := spdk.NVMeDiscover(); err != nil {
+		fmt.Printf("Unable to discover NVMe devices (%s)\n", err)
+	}
 }
