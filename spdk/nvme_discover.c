@@ -53,7 +53,6 @@ struct ns_entry {
 
 static struct ctrlr_entry *g_controllers = NULL;
 static struct ns_entry *g_namespaces = NULL;
-static char return_string[2048];
 
 static void
 register_ns(struct spdk_nvme_ctrlr *ctrlr, struct spdk_nvme_ns *ns)
@@ -88,13 +87,9 @@ register_ns(struct spdk_nvme_ctrlr *ctrlr, struct spdk_nvme_ns *ns)
 	entry->ns = ns;
 	entry->next = g_namespaces;
 	g_namespaces = entry;
-    
-        // record output to return later
-        char namespace[256];
-        snprintf(namespace, sizeof(namespace), "  Namespace ID: %d size: %juGB\n", spdk_nvme_ns_get_id(ns),
+
+	printf("  Namespace ID: %d size: %juGB\n", spdk_nvme_ns_get_id(ns),
 	       spdk_nvme_ns_get_size(ns) / 1000000000);
-        printf(namespace);
-        strcat(return_string, namespace);
 }
 
 static bool
@@ -138,14 +133,7 @@ attach_cb(void *cb_ctx, const struct spdk_nvme_transport_id *trid,
 	 * Note that in NVMe, namespace IDs start at 1, not 0.
 	 */
 	num_ns = spdk_nvme_ctrlr_get_num_ns(ctrlr);
-
-        // record output to return later
-        char controller[256];
-        snprintf(controller, sizeof(controller), "Using controller %s with %d namespaces.\n", 
-                entry->name, num_ns);
-        printf(controller);
-        strcat(return_string, controller);
-
+	printf("Using controller %s with %d namespaces.\n", entry->name, num_ns);
 	for (nsid = 1; nsid <= num_ns; nsid++) {
 		ns = spdk_nvme_ctrlr_get_ns(ctrlr, nsid);
 		if (ns == NULL) {
@@ -176,11 +164,10 @@ cleanup(void)
 	}
 }
 
-char * nvme_discover(void) 
+int nvme_discover(void) 
 {
 	int rc;
 
-        strcpy(return_string, "Controllers and Namespaces:\n");
 	printf("Initializing NVMe Controllers\n");
 
 	/*
@@ -194,16 +181,16 @@ char * nvme_discover(void)
 	if (rc != 0) {
 		fprintf(stderr, "spdk_nvme_probe() failed\n");
 		cleanup();
-		return return_string;
+		return 1;
 	}
 
 	if (g_controllers == NULL) {
 		fprintf(stderr, "no NVMe controllers found\n");
 		cleanup();
-		return return_string;
+		return 1;
 	}
 
 	printf("Initialization complete.\n");
 	cleanup();
-	return return_string;
+	return 0;
 }
