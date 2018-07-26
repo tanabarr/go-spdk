@@ -6,8 +6,8 @@ package spdk
  */
 
 /* 
-#cgo CFLAGS: -I .
-#cgo LDFLAGS: -L . -lnvme_discover -lspdk
+#cgo CFLAGS: -I /home/tanabarr/daos_m/_build.external/spdk/include
+#cgo LDFLAGS: -L /home/tanabarr/daos_m/_build.external/spdk/build/lib -lnvme_discover -lspdk
 
 #include "stdlib.h"
 #include "spdk/stdinc.h"
@@ -60,10 +60,11 @@ func InitSPDKEnv() error {
 }
 
 func NVMeDiscover() error {
-    rc := C.nvme_discover()
-    if err := rc2err("nvme_discover", rc); err != nil {
-    	return err
-    }
+    devices_s := C.nvme_discover()
+    //if err := rc2err("nvme_discover", rc); err != nil {
+    //	return err
+    //}
+    return C.GoString(devices_s)
 
-    return nil
+    //return nil
 }
