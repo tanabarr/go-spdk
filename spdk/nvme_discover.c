@@ -53,6 +53,7 @@ struct ns_entry {
 
 static struct ctrlr_entry *g_controllers = NULL;
 static struct ns_entry *g_namespaces = NULL;
+static struct ns_t *g_ns = NULL;
 
 static void
 register_ns(struct spdk_nvme_ctrlr *ctrlr, struct spdk_nvme_ns *ns)
@@ -150,6 +151,18 @@ cleanup(void)
 	struct ctrlr_entry *ctrlr_entry = g_controllers;
 
 	while (ns_entry) {
+	    ns = malloc(sizeof(struct ns_t));
+	    if (ns == NULL) {
+	    	perror("ns_t malloc");
+	    	exit(1);
+	    }
+
+        ns->size = spdk_nvme_ns_get_size(ns_entry->ns) / 1000000000;
+	    ns->id = spdk_nvme_ns_get_id(ns_entry->ns);
+	    ns->ctrlr_name = ns_entry->ctrlr;
+	    ns->next = g_ns;
+	    g_ns = ns;
+
 		struct ns_entry *next = ns_entry->next;
 		free(ns_entry);
 		ns_entry = next;
@@ -164,7 +177,7 @@ cleanup(void)
 	}
 }
 
-int nvme_discover(void) 
+struct ns_t* nvme_discover(void)
 {
 	int rc;
 

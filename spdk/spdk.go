@@ -5,7 +5,7 @@ package spdk
  * env vars.
  */
 
-/* 
+/*
 #cgo CFLAGS: -I /home/tanabarr/daos_m/_build.external/spdk/include
 #cgo LDFLAGS: -L /home/tanabarr/daos_m/_build.external/spdk/build/lib -lnvme_discover -lspdk
 
@@ -20,6 +20,7 @@ import "C"
 
 import (
 	"github.com/pkg/errors"
+	"unsafe"
 )
 
 /** Returns an failure if rc != 0. If err is already set
@@ -46,25 +47,25 @@ func rc2err(label string, rc C.int) error {
  * \return nil on success, err otherwise
  */
 func InitSPDKEnv() error {
-    println("Initializing NVMe Driver")
-    opts := &C.struct_spdk_env_opts{}
+	println("Initializing NVMe Driver")
+	opts := &C.struct_spdk_env_opts{}
 
-    C.spdk_env_opts_init(opts)
-    
-    rc := C.spdk_env_init(opts)
-    if err := rc2err("spdk_env_opts_init", rc); err != nil {
-    	return err
-    }
-    
-    return nil
+	C.spdk_env_opts_init(opts)
+
+	rc := C.spdk_env_init(opts)
+	if err := rc2err("spdk_env_opts_init", rc); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func NVMeDiscover() error {
-    devices_s := C.nvme_discover()
-    //if err := rc2err("nvme_discover", rc); err != nil {
-    //	return err
-    //}
-    return C.GoString(devices_s)
+	devices_s := C.nvme_discover()
+	//if err := rc2err("nvme_discover", rc); err != nil {
+	//	return err
+	//}
+	return C.GoString(devices_s)
 
-    //return nil
+	//return nil
 }
