@@ -15,7 +15,15 @@ package main
 */
 import "C"
 
-import "unsafe"
+import (
+	"fmt"
+	"log"
+	"runtime"
+	"unsafe"
+
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+)
 
 type Entry struct {
 	name1 string
@@ -33,6 +41,25 @@ func TranslateCEntry2GoEntry(e *C.struct_entry_t) *Entry {
 	}
 }
 
+func LogIfErr(err error) error {
+	if err != nil {
+		errStatus, _ := status.FromError(err)
+		function, file, line, _ := runtime.Caller(1)
+
+		// replace with new elaborated error
+		err = status.Errorf(
+			errStatus.Code(),
+			fmt.Sprintf(
+				"%v:l%d - %v(_), %v",
+				file, line,
+				runtime.FuncForPC(function).Name(),
+				errStatus.Message()))
+
+		log.Println(err)
+	}
+	return err
+}
+
 func main() {
 	println("testing")
 	entry_p := C.nvme_discover()
@@ -41,6 +68,9 @@ func main() {
 	retEntry := TranslateCEntry2GoEntry(entry_p)
 	//	println(*retEntry.inner.name1)
 	//	println(*retEntry.inner.name2)
+	LogIfErr(status.Errorf(codes.InvalidArgument, "something went wrong"))
+	LogIfErr(nil)
+	//fmt.Println("%s %s %s", runtime.Caller(1))
 	println(retEntry.name1)
 	println(retEntry.name2)
 }
