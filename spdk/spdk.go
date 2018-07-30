@@ -21,7 +21,6 @@ import "C"
 import (
 	"github.com/pkg/errors"
 	"unsafe"
-	"fmt"
 )
 
 type NameSpace struct {
