@@ -91,12 +91,12 @@ func NVMeDiscover() string {
 		ns_p = ns_p.next
 	}
 	for _, e := range entries {
-		println(
+		fmt.Println(
 			"controller: %v, namespace: %v, size: %v",
 			e.ctrlrName, e.id, e.size)
 	}
 	return fmt.Sprintf(
-		"controller: %v, namespace: %v, size: %v\n",
+		"controller: %v, namespace: %v, size: %v",
 		entries[0].ctrlrName, entries[0].id, entries[0].size)
 
 	//return nil
