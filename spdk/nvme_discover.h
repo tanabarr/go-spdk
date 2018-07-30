@@ -1,8 +1,8 @@
 #ifndef NVMEDISCOVER_H
 #define NVMEDISCOVER_H
 struct ns_t {
-    char        *id;
-    char        *ctrlr_name;
+    int        id;
+    char        ctrlr_name[1024];
     int         size;
     struct ns_t *next;
 };

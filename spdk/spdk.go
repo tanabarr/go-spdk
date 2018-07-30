@@ -6,8 +6,8 @@ package spdk
  */
 
 /*
-#cgo CFLAGS: -I /home/tanabarr/daos_m/_build.external/spdk/include
-#cgo LDFLAGS: -L /home/tanabarr/daos_m/_build.external/spdk/build/lib -lnvme_discover -lspdk
+#cgo CFLAGS: -I /home/tanabarr/daos_m/_build.external/spdk/include -I .
+#cgo LDFLAGS: -L /home/tanabarr/daos_m/_build.external/spdk/build/lib -L . -lnvme_discover -lspdk
 
 #include "stdlib.h"
 #include "spdk/stdinc.h"
@@ -21,7 +21,24 @@ import "C"
 import (
 	"github.com/pkg/errors"
 	"unsafe"
+	"fmt"
 )
+
+type NS struct {
+	id int
+	ctrlrName string
+	// ctrlrSerial string
+	size int
+	//inner C.struct_ns_t
+}
+
+func TranslateCNS2GoNS(ns *C.struct_ns_t) NS {
+	return NS{
+		id: int(ns.id),
+		ctrlrName: C.GoString(&ns.ctrlr_name[0]),
+		size: int(ns.size),
+	}
+}
 
 /** Returns an failure if rc != 0. If err is already set
  * then it is wrapped, otherwise it is ignored.
@@ -60,12 +77,27 @@ func InitSPDKEnv() error {
 	return nil
 }
 
-func NVMeDiscover() error {
-	devices_s := C.nvme_discover()
+func NVMeDiscover() string {
+	//devices_s := C.nvme_discover()
 	//if err := rc2err("nvme_discover", rc); err != nil {
 	//	return err
 	//}
-	return C.GoString(devices_s)
+	var entries []NS
+	ns_p := C.nvme_discover()
+
+	for ns_p != nil {
+		defer C.free(unsafe.Pointer(ns_p))
+		entries = append(entries, TranslateCNS2GoNS(ns_p))
+		ns_p = ns_p.next
+	}
+	for _, e := range entries {
+		println(
+			"controller: %v, namespace: %v, size: %v",
+			entries[0].ctrlrName, entries[0].id, entries[0].size)
+	}
+	return fmt.Sprintf(
+		"controller: %v, namespace: %v, size: %v\n",
+		entries[0].ctrlrName, entries[0].id, entries[0].size)
 
 	//return nil
 }
