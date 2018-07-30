@@ -24,7 +24,7 @@ import (
 	"fmt"
 )
 
-type NS struct {
+type NameSpace struct {
 	id int
 	ctrlrName string
 	// ctrlrSerial string
@@ -32,8 +32,8 @@ type NS struct {
 	//inner C.struct_ns_t
 }
 
-func TranslateCNS2GoNS(ns *C.struct_ns_t) NS {
-	return NS{
+func c2GoNameSpace(ns *C.struct_ns_t) NameSpace {
+	return NameSpace{
 		id: int(ns.id),
 		ctrlrName: C.GoString(&ns.ctrlr_name[0]),
 		size: int(ns.size),
@@ -77,27 +77,17 @@ func InitSPDKEnv() error {
 	return nil
 }
 
-func NVMeDiscover() string {
-	//devices_s := C.nvme_discover()
+func NVMeDiscover() []NameSpace {
+	var entries []NameSpace
+	ns_p := C.nvme_discover()
 	//if err := rc2err("nvme_discover", rc); err != nil {
 	//	return err
 	//}
-	var entries []NS
-	ns_p := C.nvme_discover()
 
 	for ns_p != nil {
 		defer C.free(unsafe.Pointer(ns_p))
-		entries = append(entries, TranslateCNS2GoNS(ns_p))
+		entries = append(entries, c2GoNameSpace(ns_p))
 		ns_p = ns_p.next
 	}
-	for _, e := range entries {
-		fmt.Printf(
-			"controller: %v, namespace: %v, size: %v\n",
-			e.ctrlrName, e.id, e.size)
-	}
-	return fmt.Sprintf(
-		"controller: %v, namespace: %v, size: %v",
-		entries[0].ctrlrName, entries[0].id, entries[0].size)
-
-	//return nil
+	return entries
 }
