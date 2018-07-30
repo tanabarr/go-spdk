@@ -20,6 +20,6 @@ func main() {
 	for _, e := range spdk.NVMeDiscover() {
 		fmt.Printf(
 			"controller: %v, namespace: %v, size: %v\n",
-			e.ctrlrName, e.id, e.size)
+			e.CtrlrName, e.Id, e.Size)
 	}
 }
