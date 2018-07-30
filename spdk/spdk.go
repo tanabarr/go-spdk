@@ -93,7 +93,7 @@ func NVMeDiscover() string {
 	for _, e := range entries {
 		println(
 			"controller: %v, namespace: %v, size: %v",
-			entries[0].ctrlrName, entries[0].id, entries[0].size)
+			e.ctrlrName, e.id, e.size)
 	}
 	return fmt.Sprintf(
 		"controller: %v, namespace: %v, size: %v\n",
