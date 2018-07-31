@@ -1,9 +1,8 @@
 // Go bindings for SPDK
 package spdk
 
-/** lib & include dirs detected from CGO_CFLAGS & CGO_LDFLAGS
- * env vars.
- */
+// lib & include dirs detected from CGO_CFLAGS & CGO_LDFLAGS
+// env vars.
 
 /*
 #cgo CFLAGS: -I /home/tanabarr/daos_m/_build.external/spdk/include -I .
@@ -23,16 +22,21 @@ import (
 	"unsafe"
 )
 
-type NameSpace struct {
+// Namespace struct mirrors C.struct_ns_t and
+// describes a NVMe Namespace tied to a controller.
+//
+// TODO: populate implicitly using inner member:
+// +inner C.struct_ns_t
+type Namespace struct {
 	CtrlrModel string
 	CtrlrSerial string
 	Id int32
 	Size int32
-	//inner C.struct_ns_t
 }
 
-func c2GoNameSpace(ns *C.struct_ns_t) NameSpace {
-	return NameSpace{
+// c2GoNamespace is a private translation function
+func c2GoNamespace(ns *C.struct_ns_t) Namespace {
+	return Namespace{
 		CtrlrModel: C.GoString(&ns.ctrlr_model[0]),
 		CtrlrSerial: C.GoString(&ns.ctrlr_serial[0]),
 		Id: int32(ns.id),
@@ -40,11 +44,11 @@ func c2GoNameSpace(ns *C.struct_ns_t) NameSpace {
 	}
 }
 
-/** Returns an failure if rc != 0. If err is already set
- * then it is wrapped, otherwise it is ignored.
- *
- * //func rc2err(label string, rc C.int, err error) error {
- */
+// rc2err returns an failure if rc != 0.
+//
+// TODO: If err is already set then it is wrapped,
+// otherwise it is ignored. e.g.
+// func rc2err(label string, rc C.int, err error) error {
 func rc2err(label string, rc C.int) error {
 	if rc != 0 {
 		if rc < 0 {
@@ -56,13 +60,13 @@ func rc2err(label string, rc C.int) error {
 	return nil
 }
 
-/**
- * SPDK relies on an abstraction around the local environment
- * named env that handles memory allocation and PCI device operations.
- * This library must be initialized first.
- *
- * \return nil on success, err otherwise
- */
+// InitSPDKEnv initializes the SPDK environment.
+//
+// SPDK relies on an abstraction around the local environment
+// named env that handles memory allocation and PCI device operations.
+// This library must be initialized first.
+//
+// \return nil on success, err otherwise
 func InitSPDKEnv() error {
 	println("Initializing NVMe Driver")
 	opts := &C.struct_spdk_env_opts{}
@@ -77,8 +81,11 @@ func InitSPDKEnv() error {
 	return nil
 }
 
-func NVMeDiscover() []NameSpace {
-	var entries []NameSpace
+// NVMeDiscover calls C.nvme_discover which returns a
+// pointer to single linked list of ns_t structs.
+// These are converted to a slice of go Namespace structs.
+func NVMeDiscover() []Namespace {
+	var entries []Namespace
 	ns_p := C.nvme_discover()
 	//if err := rc2err("nvme_discover", rc); err != nil {
 	//	return err
@@ -86,7 +93,7 @@ func NVMeDiscover() []NameSpace {
 
 	for ns_p != nil {
 		defer C.free(unsafe.Pointer(ns_p))
-		entries = append(entries, c2GoNameSpace(ns_p))
+		entries = append(entries, c2GoNamespace(ns_p))
 		ns_p = ns_p.next
 	}
 	return entries
