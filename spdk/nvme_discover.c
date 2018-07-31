@@ -144,7 +144,7 @@ attach_cb(void *cb_ctx, const struct spdk_nvme_transport_id *trid,
 	}
 }
 
-static void
+struct ns_t*
 cleanup(bool success)
 {
 	struct ns_entry *ns_entry = g_namespaces;
@@ -160,25 +160,22 @@ cleanup(bool success)
 		    	exit(1);
 		    }
 
-			ns->id = spdk_nvme_ns_get_id(ns_entry->ns);
-			// snprintf(
-				// ns->id,
-				// sizeof(ns->id),
-		    	// &spdk_nvme_ns_get_id(ns_entry->ns)
-			// );
 			cdata = spdk_nvme_ctrlr_get_data(ns_entry->ctrlr);
-			//ns->ctrlr_name = cdata->mn
 			snprintf(
-				ns->ctrlr_name,
-				sizeof(ns->ctrlr_name),
+				ns->ctrlr_model,
+				sizeof(ns->ctrlr_model),
 				"%-20.20s",
 				cdata->mn
 			);
-
-			//printf("Controller %-20.20s (%-20.20s): Skipping inactive NS %u\n",
-			//       cdata->mn, cdata->sn,
-			//ns->ctrlr_serial = cdata->sn
-	        ns->size = spdk_nvme_ns_get_size(ns_entry->ns) / 1000000000;
+			snprintf(
+				ns->ctrlr_serial,
+				sizeof(ns->ctrlr_serial),
+				"%-20.20s",
+				cdata->sn
+			);
+			ns->id = spdk_nvme_ns_get_id(ns_entry->ns);
+	        // capacity in GBytes
+			ns->size = spdk_nvme_ns_get_size(ns_entry->ns) / 1000000000;
 		    ns->next = g_ns;
 		    g_ns = ns;
 		}
@@ -194,6 +191,12 @@ cleanup(bool success)
 		spdk_nvme_detach(ctrlr_entry->ctrlr);
 		free(ctrlr_entry);
 		ctrlr_entry = next;
+	}
+
+	if (success == true) {
+		return g_ns;
+	} else {
+		return NULL;
 	}
 }
 
@@ -213,17 +216,14 @@ struct ns_t* nvme_discover(void)
 	rc = spdk_nvme_probe(NULL, NULL, probe_cb, attach_cb, NULL);
 	if (rc != 0) {
 		fprintf(stderr, "spdk_nvme_probe() failed\n");
-		cleanup(false);
-		return NULL;
+		return cleanup(false);
 	}
 
 	if (g_controllers == NULL) {
 		fprintf(stderr, "no NVMe controllers found\n");
-		cleanup(false);
-		return NULL;
+		return cleanup(false);
 	}
 
 	printf("Initialization complete.\n");
-	cleanup(true);
-	return g_ns;
+	return cleanup(true);
 }

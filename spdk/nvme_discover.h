@@ -2,7 +2,8 @@
 #define NVMEDISCOVER_H
 struct ns_t {
     int        id;
-    char        ctrlr_name[1024];
+    char        ctrlr_model[1024];
+    char        ctrlr_serial[1024];
     int         size;
     struct ns_t *next;
 };

@@ -24,17 +24,18 @@ import (
 )
 
 type NameSpace struct {
+	CtrlrModel string
+	CtrlrSerial string
 	Id int32
-	CtrlrName string
-	// ctrlrSerial string
 	Size int32
 	//inner C.struct_ns_t
 }
 
 func c2GoNameSpace(ns *C.struct_ns_t) NameSpace {
 	return NameSpace{
+		CtrlrModel: C.GoString(&ns.ctrlr_model[0]),
+		CtrlrSerial: C.GoString(&ns.ctrlr_serial[0]),
 		Id: int32(ns.id),
-		CtrlrName: C.GoString(&ns.ctrlr_name[0]),
 		Size: int32(ns.size),
 	}
 }

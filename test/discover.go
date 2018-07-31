@@ -19,7 +19,7 @@ func main() {
 	fmt.Println("Discovered NVMe devices: ")
 	for _, e := range spdk.NVMeDiscover() {
 		fmt.Printf(
-			"controller: %v, namespace: %v, size: %v\n",
-			e.CtrlrName, e.Id, e.Size)
+			"controller (model/serial): %v/%v, namespace: %v, size: %v\n",
+			e.CtrlrModel, e.CtrlrSerial, e.Id, e.Size)
 	}
 }
