@@ -28,19 +28,19 @@ import (
 // TODO: populate implicitly using inner member:
 // +inner C.struct_ns_t
 type Namespace struct {
-	CtrlrModel string
+	CtrlrModel  string
 	CtrlrSerial string
-	Id int32
-	Size int32
+	Id          int32
+	Size        int32
 }
 
 // c2GoNamespace is a private translation function
 func c2GoNamespace(ns *C.struct_ns_t) Namespace {
 	return Namespace{
-		CtrlrModel: C.GoString(&ns.ctrlr_model[0]),
+		CtrlrModel:  C.GoString(&ns.ctrlr_model[0]),
 		CtrlrSerial: C.GoString(&ns.ctrlr_serial[0]),
-		Id: int32(ns.id),
-		Size: int32(ns.size),
+		Id:          int32(ns.id),
+		Size:        int32(ns.size),
 	}
 }
 

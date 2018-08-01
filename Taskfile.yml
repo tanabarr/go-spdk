@@ -1,0 +1,24 @@
+version: '2'
+
+tasks:
+  main-task:
+    cmds:
+      - task: build-c-libs
+      - task: build-go
+
+  build-c-libs:
+    dir: spdk
+    cmds:
+      - rm -rf nvme_discover.[ao]
+      - gcc -c nvme_discover.c
+      - ar cru libnvme_discover.a nvme_discover.o
+ 
+  build-go:
+    dir: spdk
+    deps: [lint]
+    cmds:
+      - go build -v -i spdk.go
+
+  lint:
+    cmds:
+      - gofmt -l -s -w . && go tool vet -all . && golint

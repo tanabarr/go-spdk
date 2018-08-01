@@ -30,14 +30,14 @@ type File C.FILE
 //var  = C.environ
 
 func (f *File) WriteString(s string) {
-    p := C.CString(s)
-    C.fputs(p, (*C.FILE)(f))
-    C.free(unsafe.Pointer(p))
-    f.Flush()
+	p := C.CString(s)
+	C.fputs(p, (*C.FILE)(f))
+	C.free(unsafe.Pointer(p))
+	f.Flush()
 }
 
 func (f *File) Flush() {
-    C.fflush((*C.FILE)(f))
+	C.fflush((*C.FILE)(f))
 }
 
 var Greeting = C.GoString(C.greeting)
