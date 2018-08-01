@@ -1,12 +1,12 @@
 // Go bindings for SPDK
 package spdk
 
-// lib & include dirs detected from CGO_CFLAGS & CGO_LDFLAGS
-// env vars.
+// CGO_CFLAGS & CGO_LDFLAGS env vars can be used
+// to specify additional dirs.
 
 /*
-#cgo CFLAGS: -I /home/tanabarr/daos_m/_build.external/spdk/include -I .
-#cgo LDFLAGS: -L /home/tanabarr/daos_m/_build.external/spdk/build/lib -L . -lnvme_discover -lspdk
+#cgo CFLAGS: -I .
+#cgo LDFLAGS: -L . -lnvme_discover -lspdk
 
 #include "stdlib.h"
 #include "spdk/stdinc.h"
