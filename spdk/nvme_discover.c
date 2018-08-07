@@ -203,6 +203,20 @@ cleanup(bool success)
 struct ns_t* nvme_discover(void)
 {
 	int rc;
+	struct spdk_env_opts opts;
+	/*
+	 * SPDK relies on an abstraction around the local environment
+	 * named env that handles memory allocation and PCI device operations.
+	 * This library must be initialized first.
+	 *
+	 */
+	spdk_env_opts_init(&opts);
+	opts.name = "hello_world";
+	opts.shm_id = 0;
+	if (spdk_env_init(&opts) < 0) {
+		fprintf(stderr, "Unable to initialize SPDK env\n");
+		return cleanup(false);
+	}
 
 	printf("Initializing NVMe Controllers\n");
 
