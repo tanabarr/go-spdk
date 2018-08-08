@@ -83,7 +83,7 @@ func NVMeDiscover() []Namespace {
 				`couldn't get a handle to the library %v: %v`,
 				lnvme_discover,
 				err))
-		os.Exit(1)
+		return
 	}
 	defer h.Close()
 	fmt.Println(h)
@@ -92,7 +92,7 @@ func NVMeDiscover() []Namespace {
 	nvmeDiscover, err := h.GetSymbolPointer(f)
 	if err != nil {
 		fmt.Println(fmt.Errorf(`couldn't get symbol %q: %v`, f, err))
-		os.Exit(1)
+		return
 	}
 	fmt.Println(nvmeDiscover)
 
