@@ -9,9 +9,9 @@ tasks:
   build-c-libs:
     dir: spdk
     cmds:
-      - rm -rf nvme_discover.[ao]
-      - gcc -c nvme_discover.c
-      - ar cru libnvme_discover.a nvme_discover.o
+      - rm -f nvme_discover.o nvme_discover.so
+      - gcc -I/home/tanabarr/projects/daos_m/install/include -c -fpic -Iinclude src/nvme_discover.c -lspdk
+      - gcc -shared -o libnvme_discover.so nvme_discover.o
  
   build-go:
     dir: spdk

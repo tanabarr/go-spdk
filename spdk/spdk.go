@@ -1,25 +1,26 @@
 // Go bindings for SPDK
 package spdk
 
-// CGO_CFLAGS & CGO_LDFLAGS env vars can be used
-// to specify additional dirs.
-
-/*
-#cgo CFLAGS: -I .
-#cgo LDFLAGS: -L . -lnvme_discover -lspdk
-
-#include "stdlib.h"
-#include "spdk/stdinc.h"
-#include "spdk/nvme.h"
-#include "spdk/env.h"
-
-#include "nvme_discover.h"
-*/
+// #include <stdlib.h>
+// #include "include/nvme_discover.h"
+//
+// struct ns_t*
+// discover(void *f)
+// {
+// 	 struct ns_t* (*nvme_discover)();
+//
+// 	 nvme_discover = (struct ns_t* (*)())f;
+// 	 return nvme_discover();
+// }
 import "C"
 
 import (
-	"github.com/pkg/errors"
+	"fmt"
+	"os"
 	"unsafe"
+
+	"github.com/coreos/pkg/dlopen"
+	"github.com/pkg/errors"
 )
 
 // Namespace struct mirrors C.struct_ns_t and
@@ -60,33 +61,44 @@ func rc2err(label string, rc C.int) error {
 	return nil
 }
 
-// InitSPDKEnv initializes the SPDK environment.
-//
-// SPDK relies on an abstraction around the local environment
-// named env that handles memory allocation and PCI device operations.
-// This library must be initialized first.
-//
-// \return nil on success, err otherwise
-func InitSPDKEnv() error {
-	println("Initializing NVMe Driver")
-	opts := &C.struct_spdk_env_opts{}
-
-	C.spdk_env_opts_init(opts)
-
-	rc := C.spdk_env_init(opts)
-	if err := rc2err("spdk_env_opts_init", rc); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// NVMeDiscover calls C.nvme_discover which returns a
-// pointer to single linked list of ns_t structs.
-// These are converted to a slice of go Namespace structs.
+// NVMeDiscover retrieves library handle and looks up
+// symbol pointer for nvme_discover function.
+// void point I cannot be called directly from Go
+// so is passed to C function exposed by cgo which can
+// cast as desired type and call.
+// C.discover returns a pointer to single linked list
+// of ns_t structs which are converted to a slice of
+// Go Namespace structs.
 func NVMeDiscover() []Namespace {
 	var entries []Namespace
-	ns_p := C.nvme_discover()
+
+	lnvme_discover := []string{
+		"spdk/libnvme_discover.so",
+	}
+
+	h, err := dlopen.GetHandle(lnvme_discover)
+	if err != nil {
+		fmt.Println(
+			fmt.Errorf(
+				`couldn't get a handle to the library %v: %v`,
+				lnvme_discover,
+				err))
+		os.Exit(1)
+	}
+	defer h.Close()
+	fmt.Println(h)
+
+	f := "nvme_discover"
+	nvmeDiscover, err := h.GetSymbolPointer(f)
+	if err != nil {
+		fmt.Println(fmt.Errorf(`couldn't get symbol %q: %v`, f, err))
+		os.Exit(1)
+	}
+	fmt.Println(nvmeDiscover)
+
+	ns_p := C.discover(nvmeDiscover)
+
+	//ns_p := C.nvme_discover()
 	//if err := rc2err("nvme_discover", rc); err != nil {
 	//	return err
 	//}
@@ -96,5 +108,6 @@ func NVMeDiscover() []Namespace {
 		entries = append(entries, c2GoNamespace(ns_p))
 		ns_p = ns_p.next
 	}
+
 	return entries
 }
