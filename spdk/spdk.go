@@ -16,7 +16,6 @@ import "C"
 
 import (
 	"fmt"
-	"os"
 	"unsafe"
 
 	"github.com/coreos/pkg/dlopen"
@@ -69,11 +68,11 @@ func rc2err(label string, rc C.int) error {
 // C.discover returns a pointer to single linked list
 // of ns_t structs which are converted to a slice of
 // Go Namespace structs.
-func NVMeDiscover() []Namespace {
+func NVMeDiscover(libLocation string) ([]Namespace, error) {
 	var entries []Namespace
 
 	lnvme_discover := []string{
-		"spdk/libnvme_discover.so",
+		libLocation,
 	}
 
 	h, err := dlopen.GetHandle(lnvme_discover)
@@ -83,7 +82,7 @@ func NVMeDiscover() []Namespace {
 				`couldn't get a handle to the library %v: %v`,
 				lnvme_discover,
 				err))
-		return
+		return entries, err
 	}
 	defer h.Close()
 	fmt.Println(h)
@@ -91,17 +90,13 @@ func NVMeDiscover() []Namespace {
 	f := "nvme_discover"
 	nvmeDiscover, err := h.GetSymbolPointer(f)
 	if err != nil {
-		fmt.Println(fmt.Errorf(`couldn't get symbol %q: %v`, f, err))
-		return
+		fmt.Println(
+			fmt.Errorf(`couldn't get symbol %q: %v`, f, err))
+		return entries, err
 	}
 	fmt.Println(nvmeDiscover)
 
 	ns_p := C.discover(nvmeDiscover)
-
-	//ns_p := C.nvme_discover()
-	//if err := rc2err("nvme_discover", rc); err != nil {
-	//	return err
-	//}
 
 	for ns_p != nil {
 		defer C.free(unsafe.Pointer(ns_p))
@@ -109,5 +104,5 @@ func NVMeDiscover() []Namespace {
 		ns_p = ns_p.next
 	}
 
-	return entries
+	return entries, nil
 }
