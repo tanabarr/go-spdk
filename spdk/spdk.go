@@ -84,7 +84,7 @@ func InitSPDKEnv() error {
 // NVMeDiscover calls C.nvme_discover which returns a
 // pointer to single linked list of ns_t structs.
 // These are converted to a slice of go Namespace structs.
-func NVMeDiscover() []Namespace {
+func NVMeDiscover() ([]Namespace, error) {
 	println("Interrogating NVMe Controllers")
 	var entries []Namespace
 	ns_p := C.nvme_discover()
@@ -97,5 +97,5 @@ func NVMeDiscover() []Namespace {
 		entries = append(entries, c2GoNamespace(ns_p))
 		ns_p = ns_p.next
 	}
-	return entries
+	return entries, nil
 }
