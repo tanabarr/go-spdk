@@ -22,18 +22,16 @@ func TestNVMeDiscover(t *testing.T) {
 		shouldSucceed bool
 	}{
 		{
-			lib:           "libnotthere.so",
 			shouldSucceed: false,
 		},
 		//{
-		//	lib:           "libnvme_discover.so",
 		//	shouldSucceed: true,
 		//},
 	}
 
 	for i, tt := range tests {
 		//var entries []Namespace
-		_, err := NVMeDiscover(tt.lib)
+		_, err := NVMeDiscover()
 		if checkFailure(tt.shouldSucceed, err) != nil {
 			t.Errorf("case %d: %v", i, err)
 		}
