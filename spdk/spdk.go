@@ -49,6 +49,8 @@ func c2GoNamespace(ns *C.struct_ns_t) Namespace {
 // TODO: If err is already set then it is wrapped,
 // otherwise it is ignored. e.g.
 // func rc2err(label string, rc C.int, err error) error {
+//
+// \return nil on success, err otherwise
 func rc2err(label string, rc C.int) error {
 	if rc != 0 {
 		if rc < 0 {
@@ -68,7 +70,6 @@ func rc2err(label string, rc C.int) error {
 //
 // \return nil on success, err otherwise
 func InitSPDKEnv() error {
-	println("Initializing NVMe Driver")
 	opts := &C.struct_spdk_env_opts{}
 
 	C.spdk_env_opts_init(opts)
@@ -84,13 +85,11 @@ func InitSPDKEnv() error {
 // NVMeDiscover calls C.nvme_discover which returns a
 // pointer to single linked list of ns_t structs.
 // These are converted to a slice of go Namespace structs.
+//
+// \return nil on success, err otherwise
 func NVMeDiscover() ([]Namespace, error) {
-	println("Interrogating NVMe Controllers")
 	var entries []Namespace
 	ns_p := C.nvme_discover()
-	//if err := rc2err("nvme_discover", rc); err != nil {
-	//	return err
-	//}
 
 	for ns_p != nil {
 		defer C.free(unsafe.Pointer(ns_p))

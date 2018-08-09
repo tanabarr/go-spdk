@@ -88,17 +88,12 @@ register_ns(struct spdk_nvme_ctrlr *ctrlr, struct spdk_nvme_ns *ns)
 	entry->ns = ns;
 	entry->next = g_namespaces;
 	g_namespaces = entry;
-
-	printf("  Namespace ID: %d size: %juGB\n", spdk_nvme_ns_get_id(ns),
-	       spdk_nvme_ns_get_size(ns) / 1000000000);
 }
 
 static bool
 probe_cb(void *cb_ctx, const struct spdk_nvme_transport_id *trid,
 	 struct spdk_nvme_ctrlr_opts *opts)
 {
-	printf("Attaching to %s\n", trid->traddr);
-
 	return true;
 }
 
@@ -117,8 +112,6 @@ attach_cb(void *cb_ctx, const struct spdk_nvme_transport_id *trid,
 		exit(1);
 	}
 
-	printf("Attached to %s\n", trid->traddr);
-
 	snprintf(entry->name, sizeof(entry->name), "%-20.20s (%-20.20s)", cdata->mn, cdata->sn);
 
 	entry->ctrlr = ctrlr;
@@ -134,7 +127,6 @@ attach_cb(void *cb_ctx, const struct spdk_nvme_transport_id *trid,
 	 * Note that in NVMe, namespace IDs start at 1, not 0.
 	 */
 	num_ns = spdk_nvme_ctrlr_get_num_ns(ctrlr);
-	printf("Using controller %s with %d namespaces.\n", entry->name, num_ns);
 	for (nsid = 1; nsid <= num_ns; nsid++) {
 		ns = spdk_nvme_ctrlr_get_ns(ctrlr, nsid);
 		if (ns == NULL) {
@@ -222,6 +214,5 @@ struct ns_t* nvme_discover(void)
 		return cleanup(false);
 	}
 
-	printf("Initialization complete.\n");
 	return cleanup(true);
 }
