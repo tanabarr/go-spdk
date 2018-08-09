@@ -13,7 +13,7 @@ package spdk
 #include "spdk/nvme.h"
 #include "spdk/env.h"
 
-#include "nvme_discover.h"
+#include "include/nvme_discover.h"
 */
 import "C"
 
@@ -85,6 +85,7 @@ func InitSPDKEnv() error {
 // pointer to single linked list of ns_t structs.
 // These are converted to a slice of go Namespace structs.
 func NVMeDiscover() []Namespace {
+	println("Interrogating NVMe Controllers")
 	var entries []Namespace
 	ns_p := C.nvme_discover()
 	//if err := rc2err("nvme_discover", rc); err != nil {
