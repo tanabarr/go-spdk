@@ -190,11 +190,7 @@ cleanup(bool success)
 				sizeof(ctrlr->pci_addr) + 1,
 				"%04x:%02x:%02x.%02x",
 		        ctrlr_entry->pci_addr.domain, ctrlr_entry->pci_addr.bus,
-<<<<<<< HEAD:nvme/src/nvme_discover.c
 				ctrlr_entry->pci_addr.dev, ctrlr_entry->pci_addr.func
-=======
-				ctrlr_entry->pci_addr.ctrlr_entry, ctrlr_entry->pci_addr.func
->>>>>>> bcdae60... compiler error fixups:spdk/src/nvme_discover.c
 			);
 		    ctrlr->next = g_ctrlr;
 		    g_ctrlr = ctrlr;
