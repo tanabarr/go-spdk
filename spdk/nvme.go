@@ -147,10 +147,10 @@ func Discover() ([]Controller, []Namespace, error) {
 			return ctrlrs, nss, nil
 		}
 
-		return nil, nil, errors.New(
+		return nil, nil, fmt.Errorf(
 			"NVMeDiscover(): C.nvme_discover failed, verify SPDK install")
 	}
 
-	return nil, nil, errors.New(
+	return nil, nil, fmt.Errorf(
 		"NVMeDiscover(): C.nvme_discover unexpectedly returned NULL")
 }

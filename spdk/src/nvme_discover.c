@@ -30,8 +30,8 @@
 
 struct ctrlr_entry {
 	struct spdk_nvme_ctrlr	*ctrlr;
-	struct ctrlr_entry	*next;
-	char			name[1024];
+	struct spdk_pci_addr    pci_addr;
+	struct ctrlr_entry    	*next;
 };
 
 struct ns_entry {
@@ -95,7 +95,6 @@ attach_cb(void *cb_ctx, const struct spdk_nvme_transport_id *trid,
 	int nsid, num_ns;
 	struct ctrlr_entry *entry;
 	struct spdk_nvme_ns *ns;
-	const struct spdk_nvme_ctrlr_data *cdata = spdk_nvme_ctrlr_get_data(ctrlr);
 
 	entry = malloc(sizeof(struct ctrlr_entry));
 	if (entry == NULL) {
@@ -103,9 +102,8 @@ attach_cb(void *cb_ctx, const struct spdk_nvme_transport_id *trid,
 		exit(1);
 	}
 
-	snprintf(entry->name, sizeof(entry->name), "%-20.20s (%-20.20s)", cdata->mn, cdata->sn);
-
 	entry->ctrlr = ctrlr;
+	spdk_pci_addr_parse(&entry->pci_addr, trid->traddr);
 	entry->next = g_controllers;
 	g_controllers = entry;
 
@@ -135,6 +133,7 @@ cleanup(bool success)
 	const struct spdk_nvme_ctrlr_data *cdata;
 	struct ns_t *ns;
 	struct ctrlr_t *ctrlr;
+	struct ret_t *ret;
 
 	while (ns_entry) {
 		if (success == true) {
@@ -180,12 +179,18 @@ cleanup(bool success)
 				"%-20.20s",
 				cdata->sn
 			);
+			//snprintf(
+			//	ctrlr->firmware,
+			//	sizeof(cdata->fr) + 1,
+			//	"%-20.20s",
+			//	cdata->fr
+			//);
 			snprintf(
 				ctrlr->pci_addr,
 				sizeof(ctrlr->pci_addr) + 1,
 				"%04x:%02x:%02x.%02x",
-		        dev->pci_addr.domain, dev->pci_addr.bus,
-				dev->pci_addr.dev, dev->pci_addr.func;
+		        ctrlr_entry->pci_addr.domain, ctrlr_entry->pci_addr.bus,
+				ctrlr_entry->pci_addr.dev, ctrlr_entry->pci_addr.func
 			);
 		    ctrlr->next = g_ctrlr;
 		    g_ctrlr = ctrlr;
