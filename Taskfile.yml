@@ -3,23 +3,30 @@ version: '2'
 tasks:
   main-task:
     cmds:
-      - task: build-c-libs
+      - task: build-nvme-libs
       - task: unit-tests
-      - task: build-go
+      - task: build-nvme
+      - task: build-spdk
 
-  build-c-libs:
-    dir: spdk
+  build-nvme-libs:
+    dir: nvme
     cmds:
       - rm -f nvme_discover.o nvme_discover.so
       - gcc -c -fpic -Iinclude src/nvme_discover.c -lspdk
       - gcc -shared -o libnvme_discover.so nvme_discover.o
 
   unit-tests:
-    dir: spdk
+    dir: nvme
     cmds:
       - go test
 
-  build-go:
+  build-nvme:
+    dir: nvme
+    deps: [lint]
+    cmds:
+      - go build -v -i nvme.go
+
+  build-spdk:
     dir: spdk
     deps: [lint]
     cmds:

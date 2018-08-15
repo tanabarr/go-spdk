@@ -23,6 +23,7 @@
 
 #ifndef NVMEDISCOVER_H
 #define NVMEDISCOVER_H
+#include <stdbool.h>
 struct ctrlr_t {
     int             id;
     char            model[1024];
