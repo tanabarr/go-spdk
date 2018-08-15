@@ -41,7 +41,7 @@ package spdk
 import "C"
 
 import (
-	"github.com/pkg/errors"
+	"fmt"
 	"unsafe"
 )
 
@@ -80,7 +80,7 @@ func rc2err(label string, rc C.int) error {
 			rc = -rc
 		}
 		// e := errors.Error(rc)
-		return errors.Errorf("%s: %s", label, rc) // e
+		return fmt.Errorf("%s: %s", label, rc) // e
 	}
 	return nil
 }
