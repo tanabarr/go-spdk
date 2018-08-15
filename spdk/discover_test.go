@@ -20,7 +20,7 @@
 // Any reproduction of computer software, computer software documentation, or
 // portions thereof marked with this legend must also reproduce the markings.
 //
-package spdk
+package nvme
 
 import (
 	"fmt"
@@ -38,7 +38,7 @@ func checkFailure(shouldSucceed bool, err error) (rErr error) {
 	return
 }
 
-func TestNVMeDiscover(t *testing.T) {
+func TestDiscover(t *testing.T) {
 	tests := []struct {
 		lib           string
 		shouldSucceed bool
@@ -53,7 +53,7 @@ func TestNVMeDiscover(t *testing.T) {
 
 	for i, tt := range tests {
 		//var entries []Namespace
-		_, err := NVMeDiscover()
+		_, _, err := Discover()
 		if checkFailure(tt.shouldSucceed, err) != nil {
 			t.Errorf("case %d: %v", i, err)
 		}

@@ -21,8 +21,8 @@
 // portions thereof marked with this legend must also reproduce the markings.
 //
 
-// Go bindings for SPDK
-package spdk
+// Package nvme provides Go bindings for SPDK: NVMe tasks
+package nvme
 
 // CGO_CFLAGS & CGO_LDFLAGS env vars can be used
 // to specify additional dirs.
@@ -45,25 +45,45 @@ import (
 	"unsafe"
 )
 
+// Controller struct mirrors C.struct_ctrlr_t and
+// describes a NVMe controller.
+//
+// TODO: populate implicitly using inner member:
+// +inner C.struct_ctrlr_t
+type Controller struct {
+	ID      int32
+	Model   string
+	Serial  string
+	PCIAddr string
+}
+
 // Namespace struct mirrors C.struct_ns_t and
 // describes a NVMe Namespace tied to a controller.
 //
 // TODO: populate implicitly using inner member:
 // +inner C.struct_ns_t
 type Namespace struct {
-	CtrlrModel  string
-	CtrlrSerial string
-	Id          int32
-	Size        int32
+	ID    int32
+	Size  int32
+	Ctrlr *Controller
+}
+
+// c2GoController is a private translation function
+func c2GoController(ctrlr *C.struct_ctrlr_t) Controller {
+	return Controller{
+		ID:      int32(ctrlr.id),
+		Model:   C.GoString(&ctrlr.model[0]),
+		Serial:  C.GoString(&ctrlr.serial[0]),
+		PCIAddr: C.GoString(&ctrlr.serial[0]),
+	}
 }
 
 // c2GoNamespace is a private translation function
-func c2GoNamespace(ns *C.struct_ns_t) Namespace {
+func c2GoNamespace(ns *C.struct_ns_t, ctrlr *Controller) Namespace {
 	return Namespace{
-		CtrlrModel:  C.GoString(&ns.ctrlr_model[0]),
-		CtrlrSerial: C.GoString(&ns.ctrlr_serial[0]),
-		Id:          int32(ns.id),
-		Size:        int32(ns.size),
+		ID:    int32(ns.id),
+		Size:  int32(ns.size),
+		Ctrlr: ctrlr,
 	}
 }
 
@@ -105,19 +125,32 @@ func InitSPDKEnv() error {
 	return nil
 }
 
-// NVMeDiscover calls C.nvme_discover which returns a
-// pointer to single linked list of ns_t structs.
-// These are converted to a slice of go Namespace structs.
+// Discover calls C.nvme_discover which returns
+// pointers to single linked list of ctrlr_t and ns_t structs.
+// These are converted to slices of Controller and Namespace structs.
 //
-// \return nil on success, err otherwise
-func NVMeDiscover() ([]Namespace, error) {
-	var entries []Namespace
-	ns_p := C.nvme_discover()
+// \return ([]Controllers, []Namespace, nil) on success,
+//         (nil, nil, error) otherwise
+func Discover() ([]Controller, []Namespace, error) {
+	if retPtr := C.nvme_discover(); retPtr != nil {
+		var ctrlrs []Controller
+		var nss []Namespace
 
-	for ns_p != nil {
-		defer C.free(unsafe.Pointer(ns_p))
-		entries = append(entries, c2GoNamespace(ns_p))
-		ns_p = ns_p.next
+		if retPtr.success == true {
+			ctrlrPtr := retPtr.ctrlrs
+			for ctrlrPtr != nil {
+				defer C.free(unsafe.Pointer(ctrlrPtr))
+				ctrlrs = append(ctrlrs, c2GoController(ctrlrPtr))
+				ctrlrPtr = ctrlrPtr.next
+			}
+
+			return ctrlrs, nss, nil
+		}
+
+		return nil, nil, errors.New(
+			"NVMeDiscover(): C.nvme_discover failed, verify SPDK install")
 	}
-	return entries, nil
+
+	return nil, nil, errors.New(
+		"NVMeDiscover(): C.nvme_discover unexpectedly returned NULL")
 }

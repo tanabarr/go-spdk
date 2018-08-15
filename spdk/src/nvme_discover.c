@@ -43,6 +43,7 @@ struct ns_entry {
 
 static struct ctrlr_entry *g_controllers = NULL;
 static struct ns_entry *g_namespaces = NULL;
+static struct ctrlr_t *g_ctrlr = NULL;
 static struct ns_t *g_ns = NULL;
 
 static void
@@ -126,13 +127,14 @@ attach_cb(void *cb_ctx, const struct spdk_nvme_transport_id *trid,
 	}
 }
 
-struct ns_t*
+struct ret_t*
 cleanup(bool success)
 {
 	struct ns_entry *ns_entry = g_namespaces;
 	struct ctrlr_entry *ctrlr_entry = g_controllers;
 	const struct spdk_nvme_ctrlr_data *cdata;
 	struct ns_t *ns;
+	struct ctrlr_t *ctrlr;
 
 	while (ns_entry) {
 		if (success == true) {
@@ -143,21 +145,11 @@ cleanup(bool success)
 		    }
 
 			cdata = spdk_nvme_ctrlr_get_data(ns_entry->ctrlr);
-			snprintf(
-				ns->ctrlr_model,
-				sizeof(ns->ctrlr_model),
-				"%-20.20s",
-				cdata->mn
-			);
-			snprintf(
-				ns->ctrlr_serial,
-				sizeof(ns->ctrlr_serial),
-				"%-20.20s",
-				cdata->sn
-			);
+
 			ns->id = spdk_nvme_ns_get_id(ns_entry->ns);
 	        // capacity in GBytes
 			ns->size = spdk_nvme_ns_get_size(ns_entry->ns) / 1000000000;
+			ns->ctrlr_id = cdata->cntlid;
 		    ns->next = g_ns;
 		    g_ns = ns;
 		}
@@ -168,6 +160,37 @@ cleanup(bool success)
 	}
 
 	while (ctrlr_entry) {
+		if (success == true) {
+		    ctrlr = malloc(sizeof(struct ctrlr_t));
+		    if (ctrlr == NULL) {
+				perror("ctrlr_t malloc");
+				exit(1);
+		    }
+			cdata = spdk_nvme_ctrlr_get_data(ctrlr_entry->ctrlr);
+			ctrlr->id = cdata->cntlid;
+			snprintf(
+				ctrlr->model,
+				sizeof(cdata->mn) + 1,
+				"%-20.20s",
+				cdata->mn
+			);
+			snprintf(
+				ctrlr->serial,
+				sizeof(cdata->sn) + 1,
+				"%-20.20s",
+				cdata->sn
+			);
+			snprintf(
+				ctrlr->pci_addr,
+				sizeof(ctrlr->pci_addr) + 1,
+				"%04x:%02x:%02x.%02x",
+		        dev->pci_addr.domain, dev->pci_addr.bus,
+				dev->pci_addr.dev, dev->pci_addr.func;
+			);
+		    ctrlr->next = g_ctrlr;
+		    g_ctrlr = ctrlr;
+		}
+
 		struct ctrlr_entry *next = ctrlr_entry->next;
 
 		spdk_nvme_detach(ctrlr_entry->ctrlr);
@@ -175,14 +198,15 @@ cleanup(bool success)
 		ctrlr_entry = next;
 	}
 
-	if (success == true) {
-		return g_ns;
-	} else {
-		return NULL;
-	}
+	ret = malloc(sizeof(struct ret_t));
+	ret->success = success;
+	ret->nss = g_ns;
+	ret->ctrlrs = g_ctrlr;
+
+	return ret;
 }
 
-struct ns_t* nvme_discover(void)
+struct ret_t* nvme_discover(void)
 {
 	int rc;
 

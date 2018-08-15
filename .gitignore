@@ -1,5 +1,7 @@
 # vim
 *.swp
+*.un~
+*~
 # compiled
 *.o
 *.a

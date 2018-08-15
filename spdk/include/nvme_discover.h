@@ -23,12 +23,23 @@
 
 #ifndef NVMEDISCOVER_H
 #define NVMEDISCOVER_H
-struct ns_t {
-    int        id;
-    char        ctrlr_model[1024];
-    char        ctrlr_serial[1024];
-    int         size;
-    struct ns_t *next;
+struct ctrlr_t {
+    int             id;
+    char            model[1024];
+    char            serial[1024];
+    char            pci_addr[1024];
+    struct ctrlr_t  *next;
 };
-struct ns_t* nvme_discover(void);
+struct ns_t {
+    int             id;
+    int             size;
+    int             ctrlr_id;
+    struct ns_t     *next;
+};
+struct ret_t {
+    bool            success;
+    struct ctrlr_t  *ctrlrs;
+    struct ns_t     *nss;
+};
+struct ret_t* nvme_discover(void);
 #endif
