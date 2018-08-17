@@ -187,9 +187,9 @@ cleanup(bool success)
 			);
 			snprintf(
 				ctrlr->pci_addr,
-				sizeof(ctrlr->pci_addr) + 1,
+				4097, // sizeof(ctrlr->pci_addr) + 1,
 				"%04x:%02x:%02x.%02x",
-		        ctrlr_entry->pci_addr.domain, ctrlr_entry->pci_addr.bus,
+				ctrlr_entry->pci_addr.domain, ctrlr_entry->pci_addr.bus,
 				ctrlr_entry->pci_addr.dev, ctrlr_entry->pci_addr.func
 			);
 		    ctrlr->next = g_ctrlr;
