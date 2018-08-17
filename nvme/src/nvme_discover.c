@@ -179,12 +179,12 @@ cleanup(bool success)
 				"%-20.20s",
 				cdata->sn
 			);
-			//snprintf(
-			//	ctrlr->firmware,
-			//	sizeof(cdata->fr) + 1,
-			//	"%-20.20s",
-			//	cdata->fr
-			//);
+			snprintf(
+				ctrlr->fw_rev,
+				sizeof(cdata->fr) + 1,
+				"%-20.20s",
+				cdata->fr
+			);
 			snprintf(
 				ctrlr->pci_addr,
 				sizeof(ctrlr->pci_addr) + 1,

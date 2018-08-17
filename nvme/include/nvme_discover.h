@@ -29,6 +29,7 @@ struct ctrlr_t {
     char            model[1024];
     char            serial[1024];
     char            pci_addr[1024];
+    char            fw_rev[1024];
     struct ctrlr_t  *next;
 };
 struct ns_t {
