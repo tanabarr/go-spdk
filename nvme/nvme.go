@@ -63,9 +63,9 @@ type Controller struct {
 // TODO: populate implicitly using inner member:
 // +inner C.struct_ns_t
 type Namespace struct {
-	ID    int32
-	Size  int32
-	Ctrlr *Controller
+	ID       int32
+	Size     int32
+	CtrlrID  int32
 }
 
 // c2GoController is a private translation function
@@ -80,11 +80,11 @@ func c2GoController(ctrlr *C.struct_ctrlr_t) Controller {
 }
 
 // c2GoNamespace is a private translation function
-func c2GoNamespace(ns *C.struct_ns_t, ctrlr *Controller) Namespace {
+func c2GoNamespace(ns *C.struct_ns_t) Namespace {
 	return Namespace{
-		ID:    int32(ns.id),
-		Size:  int32(ns.size),
-		Ctrlr: ctrlr,
+		ID:       int32(ns.id),
+		Size:     int32(ns.size),
+		CtrlrID:  int32(ns.ctrlr_id),
 	}
 }
 
@@ -105,6 +105,13 @@ func Discover() ([]Controller, []Namespace, error) {
 				defer C.free(unsafe.Pointer(ctrlrPtr))
 				ctrlrs = append(ctrlrs, c2GoController(ctrlrPtr))
 				ctrlrPtr = ctrlrPtr.next
+			}
+
+			nsPtr := retPtr.nss
+			for nsPtr != nil {
+				defer C.free(unsafe.Pointer(nsPtr))
+				nss = append(nss, c2GoNamespace(nsPtr))
+				nsPtr = nsPtr.next
 			}
 
 			return ctrlrs, nss, nil
