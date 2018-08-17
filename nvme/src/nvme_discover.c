@@ -30,7 +30,7 @@
 
 struct ctrlr_entry {
 	struct spdk_nvme_ctrlr	*ctrlr;
-	struct spdk_pci_addr    pci_addr;
+	char *tr_addr;
 	struct ctrlr_entry    	*next;
 };
 
@@ -103,7 +103,7 @@ attach_cb(void *cb_ctx, const struct spdk_nvme_transport_id *trid,
 	}
 
 	entry->ctrlr = ctrlr;
-	spdk_pci_addr_parse(&entry->pci_addr, trid->traddr);
+	entry->tr_addr = &trid->tradd
 	entry->next = g_controllers;
 	g_controllers = entry;
 
@@ -186,11 +186,10 @@ cleanup(bool success)
 				cdata->fr
 			);
 			snprintf(
-				ctrlr->pci_addr,
-				4097, // sizeof(ctrlr->pci_addr) + 1,
-				"%04x:%02x:%02x.%02x",
-				ctrlr_entry->pci_addr.domain, ctrlr_entry->pci_addr.bus,
-				ctrlr_entry->pci_addr.dev, ctrlr_entry->pci_addr.func
+				ctrlr->tr_addr,
+				sizeof(ctrlr->tr_addr),
+				"%s",
+				ctrlr_entry->tr_addr
 			);
 		    ctrlr->next = g_ctrlr;
 		    g_ctrlr = ctrlr;

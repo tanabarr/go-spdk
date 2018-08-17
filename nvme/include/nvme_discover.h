@@ -28,7 +28,7 @@ struct ctrlr_t {
     int             id;
     char            model[1024];
     char            serial[1024];
-    char            pci_addr[4096];
+    char            tr_addr[SPDK_NVMF_TRADDR_MAX_LEN + 1];
     char            fw_rev[1024];
     struct ctrlr_t  *next;
 };
