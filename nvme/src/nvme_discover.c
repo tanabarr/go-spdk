@@ -30,7 +30,7 @@
 
 struct ctrlr_entry {
 	struct spdk_nvme_ctrlr	*ctrlr;
-	char *tr_addr;
+	const char *tr_addr;
 	struct ctrlr_entry    	*next;
 };
 
@@ -103,7 +103,7 @@ attach_cb(void *cb_ctx, const struct spdk_nvme_transport_id *trid,
 	}
 
 	entry->ctrlr = ctrlr;
-	entry->tr_addr = &trid->tradd
+	entry->tr_addr = trid->traddr;
 	entry->next = g_controllers;
 	g_controllers = entry;
 
