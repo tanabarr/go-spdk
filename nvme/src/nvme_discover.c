@@ -182,7 +182,7 @@ cleanup(bool success)
 			snprintf(
 				ctrlr->fw_rev,
 				sizeof(cdata->fr) + 1,
-				"%-20.20s",
+				"%s",
 				cdata->fr
 			);
 			snprintf(
