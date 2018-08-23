@@ -125,7 +125,7 @@ attach_cb(void *cb_ctx, const struct spdk_nvme_transport_id *trid,
 	}
 }
 
-struct ret_t*
+static struct ret_t*
 cleanup(bool success)
 {
 	struct ns_entry *ns_entry = g_namespaces;

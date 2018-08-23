@@ -11,9 +11,9 @@ tasks:
   build-nvme-libs:
     dir: nvme
     cmds:
-      - rm -f nvme_discover.o nvme_discover.so
-      - gcc -c -fpic -Iinclude src/nvme_discover.c -lspdk
-      - gcc -shared -o libnvme_discover.so nvme_discover.o
+      - rm -f *.o *.so
+      - gcc -c -fpic -Iinclude src/*.c -lspdk
+      - gcc -shared -o libnvme_control.so *.o
 
   unit-tests:
     dir: nvme
