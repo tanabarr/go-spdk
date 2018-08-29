@@ -128,12 +128,12 @@ func Discover() ([]Controller, []Namespace, error) {
 
 // Update calls C.nvme_fwupdate to update controller firmware image.
 //
-// \ctrlr Controller to perform update on
+// \ctrlrID Controller ID to perform update on
 // \path Local filesystem path to retrieve firmware image from
 // \return nil on success,
 //         error otherwise
-func Update(ctrlr Controller, path string) error {
-	rc := C.nvme_fwupdate(ctrlr.Id, path)
+func Update(ctrlrID int32, path string) error {
+	rc := C.nvme_fwupdate(ctrlrID, path)
 	if err := rc2err("nvme_fwupdate", rc); err != nil {
 		return err
 	}
