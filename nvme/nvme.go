@@ -43,6 +43,8 @@ import "C"
 import (
 	"fmt"
 	"unsafe"
+
+//	"go-spdk/spdk"
 )
 
 // Controller struct mirrors C.struct_ctrlr_t and
@@ -119,22 +121,29 @@ func Discover() ([]Controller, []Namespace, error) {
 		}
 
 		return nil, nil, fmt.Errorf(
-			"NVMeDiscover(): C.nvme_discover failed, verify SPDK install")
+			"NVMe Discover(): C.nvme_discover failed, verify SPDK install")
 	}
 
 	return nil, nil, fmt.Errorf(
-		"NVMeDiscover(): C.nvme_discover unexpectedly returned NULL")
+		"NVMe Discover(): C.nvme_discover unexpectedly returned NULL")
 }
 
 // Update calls C.nvme_fwupdate to update controller firmware image.
 //
 // \ctrlrID Controller ID to perform update on
 // \path Local filesystem path to retrieve firmware image from
-// \return nil on success,
-//         error otherwise
+// \return nil on success, error otherwise
 func Update(ctrlrID int32, path string) error {
-	rc := C.nvme_fwupdate(ctrlrID, path)
-	if err := rc2err("nvme_fwupdate", rc); err != nil {
-		return err
+	csPath := C.CString(path)
+	defer C.free(unsafe.Pointer(csPath))
+	
+	if rc := C.nvme_fwupdate(C.int(ctrlrID), csPath); rc != 0 {
+		return fmt.Errorf(
+			"NVMe Update(): C.nvme_fwupdate failed")
 	}
+	// if err := spdk.Rc2err("nvme_fwupdate", rc); err != nil {
+		// return err
+	// }
+
+	return nil
 }

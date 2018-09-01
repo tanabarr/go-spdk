@@ -40,14 +40,14 @@ import (
 	"fmt"
 )
 
-// rc2err returns an failure if rc != 0.
+// Rc2err returns an failure if rc != 0.
 //
 // TODO: If err is already set then it is wrapped,
 // otherwise it is ignored. e.g.
-// func rc2err(label string, rc C.int, err error) error {
+// func Rc2err(label string, rc C.int, err error) error {
 //
 // \return nil on success, err otherwise
-func rc2err(label string, rc C.int) error {
+func Rc2err(label string, rc C.int) error {
 	if rc != 0 {
 		if rc < 0 {
 			rc = -rc
@@ -71,7 +71,7 @@ func InitSPDKEnv() error {
 	C.spdk_env_opts_init(opts)
 
 	rc := C.spdk_env_init(opts)
-	if err := rc2err("spdk_env_opts_init", rc); err != nil {
+	if err := Rc2err("spdk_env_opts_init", rc); err != nil {
 		return err
 	}
 
