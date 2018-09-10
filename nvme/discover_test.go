@@ -25,6 +25,8 @@ package nvme
 import (
 	"fmt"
 	"testing"
+
+	"../spdk"
 )
 
 func checkFailure(shouldSucceed bool, err error) (rErr error) {
@@ -44,7 +46,7 @@ func TestDiscover(t *testing.T) {
 		shouldSucceed bool
 	}{
 		{
-			shouldSucceed: false,
+			shouldSucceed: true,
 		},
 		//{
 		//	shouldSucceed: true,
@@ -52,8 +54,21 @@ func TestDiscover(t *testing.T) {
 	}
 
 	for i, tt := range tests {
+		if err := spdk.InitSPDKEnv(); err != nil {
+			t.Fatal(err.Error())
+		}
 		//var entries []Namespace
-		_, _, err := Discover()
+		err := Update(0, "")
+		// _, _, err := Discover()
+		if checkFailure(tt.shouldSucceed, err) != nil {
+			t.Errorf("case %d: %v", i, err)
+		}
+
+		// if err := spdk.InitSPDKEnv(); err != nil {
+			// t.Fatal(err.Error())
+		// }
+		//_, _, err = Discover()
+		err = Update(0, "")
 		if checkFailure(tt.shouldSucceed, err) != nil {
 			t.Errorf("case %d: %v", i, err)
 		}

@@ -234,3 +234,37 @@ struct ret_t* nvme_discover(void)
 
 	return cleanup(true);
 }
+
+int nvme_fwupdate2(int ctrlr_id, char *path)
+{
+	int rc;
+	/*
+	 * Start the SPDK NVMe enumeration process.  probe_cb will be called
+	 *  for each NVMe controller found, giving our application a choice on
+	 *  whether to attach to each controller.  attach_cb will then be
+	 *  called for each controller after the SPDK NVMe driver has completed
+	 *  initializing the controller we chose to attach.
+	 */
+	rc = spdk_nvme_probe(NULL, NULL, probe_cb, attach_cb, NULL);
+	if (rc != 0) {
+		fprintf(stderr, "spdk_nvme_probe() failed\n");
+		return cleanup(false);
+	}
+	if (g_controllers == NULL) {
+		fprintf(stderr, "no NVMe controllers found\n");
+		return cleanup(false);
+	}
+
+//	printf("looking for controller %d", ctrlr_id);
+//	struct ctrlr_entry *ctrlr_entry = g_controllers;
+//	const struct spdk_nvme_ctrlr_data *cdata;
+//	while (ctrlr_entry) {
+//		struct ctrlr_entry *next = ctrlr_entry->next;
+//		cdata = spdk_nvme_ctrlr_get_data(ctrlr_entry->ctrlr);
+//		printf("found controller %d", cdata->cntlid);
+//		free(ctrlr_entry);
+//		ctrlr_entry = next;
+//	}
+	cleanup(false);
+	return rc;
+}

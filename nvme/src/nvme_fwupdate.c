@@ -99,19 +99,19 @@ int nvme_fwupdate(int ctrlr_id, char *path)
 		return 1;
 	}
 
-	printf("looking for controller %d", ctrlr_id);
-	struct ctrlr_entry *ctrlr_entry = g_controllers;
-	const struct spdk_nvme_ctrlr_data *cdata;
+	//printf("looking for controller %d", ctrlr_id);
+	//struct ctrlr_entry *ctrlr_entry = g_controllers;
+	//const struct spdk_nvme_ctrlr_data *cdata;
 
-	while (ctrlr_entry) {
-		struct ctrlr_entry *next = ctrlr_entry->next;
+	//while (ctrlr_entry) {
+	//	struct ctrlr_entry *next = ctrlr_entry->next;
 
-		cdata = spdk_nvme_ctrlr_get_data(ctrlr_entry->ctrlr);
-		printf("found controller %d", cdata->cntlid);
+	//	cdata = spdk_nvme_ctrlr_get_data(ctrlr_entry->ctrlr);
+	//	printf("found controller %d", cdata->cntlid);
 
-		free(ctrlr_entry);
-		ctrlr_entry = next;
-	}
+	//	free(ctrlr_entry);
+	//	ctrlr_entry = next;
+	//}
 
 	cleanup();
 	return 0;

@@ -98,6 +98,8 @@ func c2GoNamespace(ns *C.struct_ns_t) Namespace {
 // \return ([]Controllers, []Namespace, nil) on success,
 //         (nil, nil, error) otherwise
 func Discover() ([]Controller, []Namespace, error) {
+	println("Running nvme.Discover()")
+
 	if retPtr := C.nvme_discover(); retPtr != nil {
 		var ctrlrs []Controller
 		var nss []Namespace
@@ -134,10 +136,13 @@ func Discover() ([]Controller, []Namespace, error) {
 // \path Local filesystem path to retrieve firmware image from
 // \return nil on success, error otherwise
 func Update(ctrlrID int32, path string) error {
+	println("Running nvme.Update()")
+
 	csPath := C.CString(path)
 	defer C.free(unsafe.Pointer(csPath))
 	
-	if rc := C.nvme_fwupdate(C.int(ctrlrID), csPath); rc != 0 {
+	// if rc := C.nvme_fwupdate(C.int(ctrlrID), csPath); rc != 0 {
+	if rc := C.nvme_fwupdate2(C.int(ctrlrID), csPath); rc != 0 {
 		return fmt.Errorf(
 			"NVMe Update(): C.nvme_fwupdate failed")
 	}

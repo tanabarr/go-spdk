@@ -44,4 +44,5 @@ struct ret_t {
     struct ns_t     *nss;
 };
 struct ret_t* nvme_discover(void);
+int nvme_fwupdate2(int, char *path);
 #endif
