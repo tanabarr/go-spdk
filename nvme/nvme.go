@@ -35,8 +35,7 @@ package nvme
 #include "spdk/stdinc.h"
 #include "spdk/nvme.h"
 #include "spdk/env.h"
-#include "include/nvme_discover.h"
-#include "include/nvme_fwupdate.h"
+#include "include/nvme_control.h"
 */
 import "C"
 
@@ -141,14 +140,10 @@ func Update(ctrlrID int32, path string) error {
 	csPath := C.CString(path)
 	defer C.free(unsafe.Pointer(csPath))
 	
-	// if rc := C.nvme_fwupdate(C.int(ctrlrID), csPath); rc != 0 {
-	if rc := C.nvme_fwupdate2(C.int(ctrlrID), csPath); rc != 0 {
+	if rc := C.nvme_fwupdate(C.int(ctrlrID), csPath); rc != 0 {
 		return fmt.Errorf(
 			"NVMe Update(): C.nvme_fwupdate failed")
 	}
-	// if err := spdk.Rc2err("nvme_fwupdate", rc); err != nil {
-		// return err
-	// }
 
 	return nil
 }

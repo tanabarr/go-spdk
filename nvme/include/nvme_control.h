@@ -21,7 +21,29 @@
 // portions thereof marked with this legend must also reproduce the markings.
 //
 
-#ifndef NVMEFWUPDATE_H
-#define NVMEFWUPDATE_H
+#ifndef NVMECONTROL_H
+#define NVMECONTROL_H
+#include <stdbool.h>
+struct ctrlr_t {
+    int             id;
+    char            model[1024];
+    char            serial[1024];
+    char            tr_addr[SPDK_NVMF_TRADDR_MAX_LEN + 1];
+    char            fw_rev[1024];
+    struct ctrlr_t  *next;
+};
+struct ns_t {
+    int             id;
+    int             size;
+    int             ctrlr_id;
+    struct ns_t     *next;
+};
+struct ret_t {
+    bool            success;
+    struct ctrlr_t  *ctrlrs;
+    struct ns_t     *nss;
+};
+struct ret_t* nvme_discover(void);
 int nvme_fwupdate(int, char *path);
+void nvme_cleanup(void);
 #endif

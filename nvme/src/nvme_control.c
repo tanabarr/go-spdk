@@ -26,7 +26,7 @@
 #include "spdk/nvme.h"
 #include "spdk/env.h"
 
-#include "nvme_discover.h"
+#include "nvme_control.h"
 
 struct ctrlr_entry {
 	struct spdk_nvme_ctrlr	*ctrlr;
@@ -197,28 +197,19 @@ cleanup(void)
 {
 	struct ns_entry *ns_entry = g_namespaces;
 	struct ctrlr_entry *ctrlr_entry = g_controllers;
-	printf("inside cleaning\n");
+
 	while (ns_entry) {
-		printf("inside cleaning:  nclears, next %s\n", ns_entry, ns_entry->next);
 		struct ns_entry *next = ns_entry->next;
-		printf("inside cleaning: freeing\n");
 		free(ns_entry);
-		printf("inside cleaning: assigning next\n");
 		ns_entry = next;
 	}
-	printf("inside cleaning: finished entry starting controllers\n");
 
 	while (ctrlr_entry) {
-		printf("inside cleaning: controller %s, next %s\n", ctrlr_entry, ctrlr_entry->next);
 		struct ctrlr_entry *next = ctrlr_entry->next;
-		printf("inside cleaning: detaching controller\n");
 		spdk_nvme_detach(ctrlr_entry->ctrlr);
-		printf("inside cleaning: freeing controller\n");
 		free(ctrlr_entry);
-		printf("inside cleaning: assigning next\n");
 		ctrlr_entry = next;
 	}
-	printf("inside cleaning: finished entry starting controllers\n");
 }
 
 struct ret_t* nvme_discover(void)
@@ -254,7 +245,7 @@ struct ret_t* nvme_discover(void)
 	return ret;
 }
 
-int nvme_fwupdate2(int ctrlr_id, char *path)
+int nvme_fwupdate(int ctrlr_id, char *path)
 {
 	int rc;
 
@@ -277,3 +268,103 @@ void nvme_cleanup()
 {
 	cleanup();
 }
+
+//static void
+//update_firmware_image(void)
+//{
+//	int					rc;
+//	int					fd = -1;
+//	int					slot;
+//	unsigned int				size;
+//	struct stat				fw_stat;
+//	char					path[256];
+//	void					*fw_image;
+//	struct dev				*ctrlr;
+//	const struct spdk_nvme_ctrlr_data	*cdata;
+//	enum spdk_nvme_fw_commit_action		commit_action;
+//	struct spdk_nvme_status			status;
+//
+//	ctrlr = get_controller();
+//	if (ctrlr == NULL) {
+//		printf("Invalid controller PCI BDF.\n");
+//		return;
+//	}
+//
+//	cdata = ctrlr->cdata;
+//
+//	if (!cdata->oacs.firmware) {
+//		printf("Controller does not support firmware download and commit command\n");
+//		return;
+//	}
+//
+//	printf("Please Input The Path Of Firmware Image\n");
+//
+////	if (get_line(path, sizeof(path), stdin) == NULL) {
+////		printf("Invalid path setting\n");
+////		while (getchar() != '\n');
+////		return;
+////	}
+////
+//	fd = open(path, O_RDONLY);
+//	if (fd < 0) {
+//		perror("Open file failed");
+//		return;
+//	}
+//	rc = fstat(fd, &fw_stat);
+//	if (rc < 0) {
+//		printf("Fstat failed\n");
+//		close(fd);
+//		return;
+//	}
+//
+//	if (fw_stat.st_size % 4) {
+//		printf("Firmware image size is not multiple of 4\n");
+//		close(fd);
+//		return;
+//	}
+//
+//	size = fw_stat.st_size;
+//
+//	fw_image = spdk_dma_zmalloc(size, 4096, NULL);
+//	if (fw_image == NULL) {
+//		printf("Allocation error\n");
+//		close(fd);
+//		return;
+//	}
+//
+//	if (read(fd, fw_image, size) != ((ssize_t)(size))) {
+//		printf("Read firmware image failed\n");
+//		close(fd);
+//		spdk_dma_free(fw_image);
+//		return;
+//	}
+//	close(fd);
+//
+//	printf("Please Input Slot(0 - 7):\n");
+//	if (!scanf("%d", &slot)) {
+//		printf("Invalid Slot\n");
+//		spdk_dma_free(fw_image);
+//		while (getchar() != '\n');
+//		return;
+//	}
+//
+//	commit_action = SPDK_NVME_FW_COMMIT_REPLACE_AND_ENABLE_IMG;
+//	rc = spdk_nvme_ctrlr_update_firmware(ctrlr->ctrlr, fw_image, size, slot, commit_action, &status);
+//	if (rc == -ENXIO && status.sct == SPDK_NVME_SCT_COMMAND_SPECIFIC &&
+//	    status.sc == SPDK_NVME_SC_FIRMWARE_REQ_CONVENTIONAL_RESET) {
+//		printf("conventional reset is needed to enable firmware !\n");
+//	} else if (rc) {
+//		printf("spdk_nvme_ctrlr_update_firmware failed\n");
+//	} else {
+//		printf("spdk_nvme_ctrlr_update_firmware success\n");
+//	}
+//	spdk_dma_free(fw_image);
+//}
+//	spdk_env_opts_init(&opts);
+//	opts.name = "nvme_manage";
+//	opts.core_mask = "0x1";
+//	opts.shm_id = g_shm_id;
+//	if (spdk_env_init(&opts) < 0) {
+//		fprintf(stderr, "Unable to initialize SPDK env\n");
+//		return 1;
+//	}
