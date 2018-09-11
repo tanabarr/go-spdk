@@ -43,8 +43,6 @@ struct ns_entry {
 
 static struct ctrlr_entry *g_controllers = NULL;
 static struct ns_entry *g_namespaces = NULL;
-static struct ctrlr_t *g_ctrlr = NULL;
-static struct ns_t *g_ns = NULL;
 
 static void
 register_ns(struct spdk_nvme_ctrlr *ctrlr, struct spdk_nvme_ns *ns)
