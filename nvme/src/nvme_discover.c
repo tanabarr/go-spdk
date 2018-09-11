@@ -125,94 +125,109 @@ attach_cb(void *cb_ctx, const struct spdk_nvme_transport_id *trid,
 	}
 }
 
-static struct ret_t*
-cleanup(bool success)
+static void
+collect(struct ret_t *ret)
 {
 	struct ns_entry *ns_entry = g_namespaces;
 	struct ctrlr_entry *ctrlr_entry = g_controllers;
 	const struct spdk_nvme_ctrlr_data *cdata;
-	struct ns_t *ns;
-	struct ctrlr_t *ctrlr;
-	struct ret_t *ret;
 
 	while (ns_entry) {
-		if (success == true) {
-		    ns = malloc(sizeof(struct ns_t));
-		    if (ns == NULL) {
-		    	perror("ns_t malloc");
-		    	exit(1);
-		    }
+		struct ns_t *ns_tmp = malloc(sizeof(struct ns_t));
+	    if (ns_tmp == NULL) {
+	    	perror("ns_t malloc");
+	    	exit(1);
+	    }
 
-			cdata = spdk_nvme_ctrlr_get_data(ns_entry->ctrlr);
+		cdata = spdk_nvme_ctrlr_get_data(ns_entry->ctrlr);
 
-			ns->id = spdk_nvme_ns_get_id(ns_entry->ns);
-	        // capacity in GBytes
-			ns->size = spdk_nvme_ns_get_size(ns_entry->ns) / 1000000000;
-			ns->ctrlr_id = cdata->cntlid;
-		    ns->next = g_ns;
-		    g_ns = ns;
-		}
+		ns_tmp->id = spdk_nvme_ns_get_id(ns_entry->ns);
+        // capacity in GBytes
+		ns_tmp->size = spdk_nvme_ns_get_size(ns_entry->ns) / 1000000000;
+		ns_tmp->ctrlr_id = cdata->cntlid;
+	    ns_tmp->next = ret->nss;
+	    ret->nss = ns_tmp;
 
-		struct ns_entry *next = ns_entry->next;
-		free(ns_entry);
-		ns_entry = next;
+		ns_entry = ns_entry->next;
 	}
 
 	while (ctrlr_entry) {
-		if (success == true) {
-		    ctrlr = malloc(sizeof(struct ctrlr_t));
-		    if (ctrlr == NULL) {
-				perror("ctrlr_t malloc");
-				exit(1);
-		    }
-			cdata = spdk_nvme_ctrlr_get_data(ctrlr_entry->ctrlr);
-			ctrlr->id = cdata->cntlid;
-			snprintf(
-				ctrlr->model,
-				sizeof(cdata->mn) + 1,
-				"%-20.20s",
-				cdata->mn
-			);
-			snprintf(
-				ctrlr->serial,
-				sizeof(cdata->sn) + 1,
-				"%-20.20s",
-				cdata->sn
-			);
-			snprintf(
-				ctrlr->fw_rev,
-				sizeof(cdata->fr) + 1,
-				"%s",
-				cdata->fr
-			);
-			snprintf(
-				ctrlr->tr_addr,
-				sizeof(ctrlr->tr_addr),
-				"%s",
-				ctrlr_entry->tr_addr
-			);
-		    ctrlr->next = g_ctrlr;
-		    g_ctrlr = ctrlr;
-		}
+	    struct ctrlr_t *ctrlr_tmp = malloc(sizeof(struct ctrlr_t));
+	    if (ctrlr_tmp == NULL) {
+			perror("ctrlr_t malloc");
+			exit(1);
+	    }
+		cdata = spdk_nvme_ctrlr_get_data(ctrlr_entry->ctrlr);
+		ctrlr_tmp->id = cdata->cntlid;
+		snprintf(
+			ctrlr_tmp->model,
+			sizeof(cdata->mn) + 1,
+			"%-20.20s",
+			cdata->mn
+		);
+		snprintf(
+			ctrlr_tmp->serial,
+			sizeof(cdata->sn) + 1,
+			"%-20.20s",
+			cdata->sn
+		);
+		snprintf(
+			ctrlr_tmp->fw_rev,
+			sizeof(cdata->fr) + 1,
+			"%s",
+			cdata->fr
+		);
+		snprintf(
+			ctrlr_tmp->tr_addr,
+			sizeof(ctrlr_tmp->tr_addr),
+			"%s",
+			ctrlr_entry->tr_addr
+		);
+	    ctrlr_tmp->next = ret->ctrlrs;
+	    ret->ctrlrs = ctrlr_tmp;
 
-		struct ctrlr_entry *next = ctrlr_entry->next;
-
-		spdk_nvme_detach(ctrlr_entry->ctrlr);
-		free(ctrlr_entry);
-		ctrlr_entry = next;
+		ctrlr_entry = ctrlr_entry->next;
 	}
 
-	ret = malloc(sizeof(struct ret_t));
-	ret->success = success;
-	ret->nss = g_ns;
-	ret->ctrlrs = g_ctrlr;
+	ret->success = true;
+}
 
-	return ret;
+static void
+cleanup(void)
+{
+	struct ns_entry *ns_entry = g_namespaces;
+	struct ctrlr_entry *ctrlr_entry = g_controllers;
+	printf("inside cleaning\n");
+	while (ns_entry) {
+		printf("inside cleaning:  nclears, next %s\n", ns_entry, ns_entry->next);
+		struct ns_entry *next = ns_entry->next;
+		printf("inside cleaning: freeing\n");
+		free(ns_entry);
+		printf("inside cleaning: assigning next\n");
+		ns_entry = next;
+	}
+	printf("inside cleaning: finished entry starting controllers\n");
+
+	while (ctrlr_entry) {
+		printf("inside cleaning: controller %s, next %s\n", ctrlr_entry, ctrlr_entry->next);
+		struct ctrlr_entry *next = ctrlr_entry->next;
+		printf("inside cleaning: detaching controller\n");
+		spdk_nvme_detach(ctrlr_entry->ctrlr);
+		printf("inside cleaning: freeing controller\n");
+		free(ctrlr_entry);
+		printf("inside cleaning: assigning next\n");
+		ctrlr_entry = next;
+	}
+	printf("inside cleaning: finished entry starting controllers\n");
 }
 
 struct ret_t* nvme_discover(void)
 {
-	int rc;
+	struct ret_t *ret = malloc(sizeof(struct ret_t));
+
+	ret->success = false;
+	ret->ctrlrs = NULL;
+	ret->nss = NULL;
 
 	/*
 	 * Start the SPDK NVMe enumeration process.  probe_cb will be called
@@ -221,50 +236,44 @@ struct ret_t* nvme_discover(void)
 	 *  called for each controller after the SPDK NVMe driver has completed
 	 *  initializing the controller we chose to attach.
 	 */
-	rc = spdk_nvme_probe(NULL, NULL, probe_cb, attach_cb, NULL);
+	int rc = spdk_nvme_probe(NULL, NULL, probe_cb, attach_cb, NULL);
 	if (rc != 0) {
 		fprintf(stderr, "spdk_nvme_probe() failed\n");
-		return cleanup(false);
+		cleanup();
+		return ret;
 	}
 
 	if (g_controllers == NULL) {
 		fprintf(stderr, "no NVMe controllers found\n");
-		return cleanup(false);
+		cleanup();
+		return ret;
 	}
 
-	return cleanup(true);
+	collect(ret);
+
+	return ret;
 }
 
 int nvme_fwupdate2(int ctrlr_id, char *path)
 {
 	int rc;
-	/*
-	 * Start the SPDK NVMe enumeration process.  probe_cb will be called
-	 *  for each NVMe controller found, giving our application a choice on
-	 *  whether to attach to each controller.  attach_cb will then be
-	 *  called for each controller after the SPDK NVMe driver has completed
-	 *  initializing the controller we chose to attach.
-	 */
-	rc = spdk_nvme_probe(NULL, NULL, probe_cb, attach_cb, NULL);
-	if (rc != 0) {
-		fprintf(stderr, "spdk_nvme_probe() failed\n");
-		return cleanup(false);
-	}
-	if (g_controllers == NULL) {
-		fprintf(stderr, "no NVMe controllers found\n");
-		return cleanup(false);
+
+	printf("looking for controller %d\n", ctrlr_id);
+	struct ctrlr_entry *ctrlr_entry = g_controllers;
+	const struct spdk_nvme_ctrlr_data *cdata;
+
+	while (ctrlr_entry) {
+		cdata = spdk_nvme_ctrlr_get_data(ctrlr_entry->ctrlr);
+
+		printf("found controller %d\n", cdata->cntlid);
+
+		ctrlr_entry = ctrlr_entry->next;
 	}
 
-//	printf("looking for controller %d", ctrlr_id);
-//	struct ctrlr_entry *ctrlr_entry = g_controllers;
-//	const struct spdk_nvme_ctrlr_data *cdata;
-//	while (ctrlr_entry) {
-//		struct ctrlr_entry *next = ctrlr_entry->next;
-//		cdata = spdk_nvme_ctrlr_get_data(ctrlr_entry->ctrlr);
-//		printf("found controller %d", cdata->cntlid);
-//		free(ctrlr_entry);
-//		ctrlr_entry = next;
-//	}
-	cleanup(false);
 	return rc;
+}
+
+void nvme_cleanup()
+{
+	cleanup();
 }

@@ -58,8 +58,8 @@ func TestDiscover(t *testing.T) {
 			t.Fatal(err.Error())
 		}
 		//var entries []Namespace
-		err := Update(0, "")
-		// _, _, err := Discover()
+		// err := Update(0, "")
+		_, _, err := Discover()
 		if checkFailure(tt.shouldSucceed, err) != nil {
 			t.Errorf("case %d: %v", i, err)
 		}
@@ -72,6 +72,8 @@ func TestDiscover(t *testing.T) {
 		if checkFailure(tt.shouldSucceed, err) != nil {
 			t.Errorf("case %d: %v", i, err)
 		}
+
+		Cleanup()
 
 		//fmt.Println("Discovered NVMe devices: ")
 		//for _, e := range entries {

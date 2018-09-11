@@ -45,4 +45,5 @@ struct ret_t {
 };
 struct ret_t* nvme_discover(void);
 int nvme_fwupdate2(int, char *path);
+void nvme_cleanup(void);
 #endif

@@ -152,3 +152,8 @@ func Update(ctrlrID int32, path string) error {
 
 	return nil
 }
+
+// Cleanup unlinks and detaches any controllers or namespaces.
+func Cleanup() {
+	C.nvme_cleanup()
+}
