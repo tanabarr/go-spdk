@@ -245,7 +245,7 @@ struct ret_t* nvme_discover(void)
 
 int nvme_fwupdate(int ctrlr_id, char *path)
 {
-	int rc;
+	int rc = 0;
 
 	printf("looking for controller %d\n", ctrlr_id);
 	struct ctrlr_entry *ctrlr_entry = g_controllers;
