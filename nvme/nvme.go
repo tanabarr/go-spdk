@@ -97,13 +97,11 @@ func c2GoNamespace(ns *C.struct_ns_t) Namespace {
 // \return ([]Controllers, []Namespace, nil) on success,
 //         (nil, nil, error) otherwise
 func Discover() ([]Controller, []Namespace, error) {
-	println("Running nvme.Discover()")
-
 	if retPtr := C.nvme_discover(); retPtr != nil {
 		var ctrlrs []Controller
 		var nss []Namespace
 
-		if retPtr.success == true {
+		if retPtr.rc == 0 {
 			ctrlrPtr := retPtr.ctrlrs
 			for ctrlrPtr != nil {
 				defer C.free(unsafe.Pointer(ctrlrPtr))
@@ -122,7 +120,9 @@ func Discover() ([]Controller, []Namespace, error) {
 		}
 
 		return nil, nil, fmt.Errorf(
-			"NVMe Discover(): C.nvme_discover failed, verify SPDK install")
+			"NVMe Discover(): C.nvme_discover failed, rc: %d, %s",
+			retPtr.rc,
+			retPtr.err)
 	}
 
 	return nil, nil, fmt.Errorf(
@@ -134,18 +134,24 @@ func Discover() ([]Controller, []Namespace, error) {
 // \ctrlrID Controller ID to perform update on
 // \path Local filesystem path to retrieve firmware image from
 // \return nil on success, error otherwise
-func Update(ctrlrID int32, path string) error {
-	println("Running nvme.Update()")
-
+func Update(ctrlrID int32, path string, slot int32) error {
 	csPath := C.CString(path)
 	defer C.free(unsafe.Pointer(csPath))
-	
-	if rc := C.nvme_fwupdate(C.int(ctrlrID), csPath); rc != 0 {
+
+	retPtr := C.nvme_fwupdate(C.uint(ctrlrID), csPath, C.uint(slot))
+	if retPtr != nil {
+		if retPtr.rc == 0 {
+			return nil
+		}
+
 		return fmt.Errorf(
-			"NVMe Update(): C.nvme_fwupdate failed")
+			"NVMe Update(): C.nvme_fwupdate failed, rc: %d, %s",
+			retPtr.rc,
+			C.GoString(&retPtr.err[0]))
 	}
 
-	return nil
+	return fmt.Errorf(
+		"NVMe Update(): C.nvme_fwupdate unexpectedly returned NULL")
 }
 
 // Cleanup unlinks and detaches any controllers or namespaces.

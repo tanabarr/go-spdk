@@ -30,19 +30,19 @@
 
 struct ctrlr_entry {
 	struct spdk_nvme_ctrlr	*ctrlr;
-	const char *tr_addr;
+	const char 				*tr_addr;
 	struct ctrlr_entry    	*next;
 };
 
 struct ns_entry {
 	struct spdk_nvme_ctrlr	*ctrlr;
-	struct spdk_nvme_ns	*ns;
-	struct ns_entry		*next;
+	struct spdk_nvme_ns		*ns;
+	struct ns_entry			*next;
 	struct spdk_nvme_qpair	*qpair;
 };
 
-static struct ctrlr_entry *g_controllers = NULL;
-static struct ns_entry *g_namespaces = NULL;
+static struct ctrlr_entry 	*g_controllers = NULL;
+static struct ns_entry		*g_namespaces = NULL;
 
 static void
 register_ns(struct spdk_nvme_ctrlr *ctrlr, struct spdk_nvme_ns *ns)
@@ -123,12 +123,35 @@ attach_cb(void *cb_ctx, const struct spdk_nvme_transport_id *trid,
 	}
 }
 
+static struct ret_t *
+init_ret(void)
+{
+	struct ret_t *ret = malloc(sizeof(struct ret_t));
+
+	ret->rc = 0;
+	ret->ctrlrs = NULL;
+	ret->nss = NULL;
+	snprintf(ret->err, sizeof(ret->err), "none");
+
+	return ret;
+}
+
+static void
+check_size(int written, int max, char *msg, struct ret_t *ret)
+{
+	if (written >= max) {
+		snprintf(ret->err, sizeof(ret->err), msg);
+		ret->rc = 1;
+	}
+}
+
 static void
 collect(struct ret_t *ret)
 {
 	struct ns_entry *ns_entry = g_namespaces;
 	struct ctrlr_entry *ctrlr_entry = g_controllers;
 	const struct spdk_nvme_ctrlr_data *cdata;
+	int written;
 
 	while (ns_entry) {
 		struct ns_t *ns_tmp = malloc(sizeof(struct ns_t));
@@ -155,39 +178,49 @@ collect(struct ret_t *ret)
 			perror("ctrlr_t malloc");
 			exit(1);
 	    }
+
 		cdata = spdk_nvme_ctrlr_get_data(ctrlr_entry->ctrlr);
-		ctrlr_tmp->id = cdata->cntlid;
-		snprintf(
+
+		written = snprintf(
 			ctrlr_tmp->model,
-			sizeof(cdata->mn) + 1,
+			sizeof(ctrlr_tmp->model),
 			"%-20.20s",
 			cdata->mn
 		);
-		snprintf(
+		check_size(written, sizeof(ctrlr_tmp->model), "model truncated", ret);
+
+		written = snprintf(
 			ctrlr_tmp->serial,
-			sizeof(cdata->sn) + 1,
+			sizeof(ctrlr_tmp->serial),
 			"%-20.20s",
 			cdata->sn
 		);
-		snprintf(
+		check_size(written, sizeof(ctrlr_tmp->serial), "serial truncated", ret);
+
+		written = snprintf(
 			ctrlr_tmp->fw_rev,
-			sizeof(cdata->fr) + 1,
+			sizeof(ctrlr_tmp->fw_rev),
 			"%s",
 			cdata->fr
 		);
-		snprintf(
+		check_size(written, sizeof(ctrlr_tmp->fw_rev), "firmware revision truncated", ret);
+
+		written = snprintf(
 			ctrlr_tmp->tr_addr,
 			sizeof(ctrlr_tmp->tr_addr),
 			"%s",
 			ctrlr_entry->tr_addr
 		);
+		check_size(written, sizeof(ctrlr_tmp->tr_addr), "transport address truncated", ret);
+
+		ctrlr_tmp->id = cdata->cntlid;
 	    ctrlr_tmp->next = ret->ctrlrs;
 	    ret->ctrlrs = ctrlr_tmp;
 
 		ctrlr_entry = ctrlr_entry->next;
 	}
 
-	ret->success = true;
+	ret->rc = 0;
 }
 
 static void
@@ -210,13 +243,10 @@ cleanup(void)
 	}
 }
 
-struct ret_t* nvme_discover(void)
+struct ret_t *
+nvme_discover(void)
 {
-	struct ret_t *ret = malloc(sizeof(struct ret_t));
-
-	ret->success = false;
-	ret->ctrlrs = NULL;
-	ret->nss = NULL;
+	struct ret_t *ret = init_ret();
 
 	/*
 	 * Start the SPDK NVMe enumeration process.  probe_cb will be called
@@ -243,26 +273,107 @@ struct ret_t* nvme_discover(void)
 	return ret;
 }
 
-int nvme_fwupdate(int ctrlr_id, char *path)
+struct ret_t *
+nvme_fwupdate(unsigned int ctrlr_id, char *path, unsigned int slot)
 {
-	int rc = 0;
+	int									rc = 1;
+	int									fd = -1;
+	unsigned int						size;
+	struct stat							fw_stat;
+	void								*fw_image;
+	enum spdk_nvme_fw_commit_action		commit_action;
+	struct spdk_nvme_status				status;
+	const struct spdk_nvme_ctrlr_data 	*cdata;
+	struct ctrlr_entry 					*ctrlr_entry;
+	struct ret_t 						*ret;
 
-	printf("looking for controller %d\n", ctrlr_id);
-	struct ctrlr_entry *ctrlr_entry = g_controllers;
-	const struct spdk_nvme_ctrlr_data *cdata;
+	ctrlr_entry = g_controllers;
+	ret = init_ret();
+
+	printf("looking to update controller %d\n", ctrlr_id);
 
 	while (ctrlr_entry) {
 		cdata = spdk_nvme_ctrlr_get_data(ctrlr_entry->ctrlr);
 
-		printf("found controller %d\n", cdata->cntlid);
+		if (cdata->cntlid == ctrlr_id) {
+			printf("found controller %d\n", cdata->cntlid);
+			break;
+		}
 
 		ctrlr_entry = ctrlr_entry->next;
 	}
 
-	return rc;
+	if (ctrlr_entry == NULL) {
+		sprintf(ret->err, "specified controller not found (%d)", ctrlr_id);
+		ret->rc = 1;
+
+		return ret;
+	}
+
+	fd = open(path, O_RDONLY);
+	if (fd < 0) {
+		sprintf(ret->err, "Open file failed");
+		ret->rc = 1;
+
+		return ret;
+	}
+	rc = fstat(fd, &fw_stat);
+	if (rc < 0) {
+		close(fd);
+		sprintf(ret->err, "Fstat failed");
+		ret->rc = 1;
+
+		return ret;
+	}
+
+	if (fw_stat.st_size % 4) {
+		close(fd);
+		sprintf(ret->err, "Firmware image size is not multiple of 4");
+		ret->rc = 1;
+
+		return ret;
+	}
+
+	size = fw_stat.st_size;
+
+	fw_image = spdk_dma_zmalloc(size, 4096, NULL);
+	if (fw_image == NULL) {
+		close(fd);
+		sprintf(ret->err, "Allocation error");
+		ret->rc = 1;
+
+		return ret;
+	}
+
+	if (read(fd, fw_image, size) != ((ssize_t)(size))) {
+		close(fd);
+		spdk_dma_free(fw_image);
+		sprintf(ret->err, "Read firmware image failed");
+		ret->rc = 1;
+
+		return ret;
+	}
+	close(fd);
+
+	commit_action = SPDK_NVME_FW_COMMIT_REPLACE_AND_ENABLE_IMG;
+	rc = spdk_nvme_ctrlr_update_firmware(ctrlr_entry->ctrlr, fw_image, size, slot, commit_action, &status);
+	if (rc == -ENXIO && status.sct == SPDK_NVME_SCT_COMMAND_SPECIFIC &&
+	    status.sc == SPDK_NVME_SC_FIRMWARE_REQ_CONVENTIONAL_RESET) {
+		sprintf(ret->err, "conventional reset is needed to enable firmware !");
+	} else if (rc) {
+		sprintf(ret->err, "spdk_nvme_ctrlr_update_firmware failed");
+	} else {
+		sprintf(ret->err, "spdk_nvme_ctrlr_update_firmware success");
+	}
+	spdk_dma_free(fw_image);
+
+	ret->rc = rc;
+
+	return ret;
 }
 
-void nvme_cleanup()
+void
+nvme_cleanup()
 {
 	cleanup();
 }
@@ -273,6 +384,8 @@ void nvme_cleanup()
 //	int					rc;
 //	int					fd = -1;
 //	int					slot;
+//	int					rc;
+//	int					fd = -1;
 //	unsigned int				size;
 //	struct stat				fw_stat;
 //	char					path[256];
