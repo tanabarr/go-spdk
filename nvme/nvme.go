@@ -42,8 +42,7 @@ import "C"
 import (
 	"fmt"
 	"unsafe"
-
-//	"go-spdk/spdk"
+	//	"go-spdk/spdk"
 )
 
 // Controller struct mirrors C.struct_ctrlr_t and
@@ -90,6 +89,40 @@ func c2GoNamespace(ns *C.struct_ns_t) Namespace {
 	}
 }
 
+// processReturn parses return structs
+func processReturn(retPtr *C.struct_ret_t, failLocation string) (
+	[]Controller, []Namespace, error) {
+
+	var ctrlrs []Controller
+	var nss []Namespace
+
+	defer C.free(unsafe.Pointer(retPtr))
+
+	if retPtr.rc == 0 {
+		ctrlrPtr := retPtr.ctrlrs
+		for ctrlrPtr != nil {
+			defer C.free(unsafe.Pointer(ctrlrPtr))
+			ctrlrs = append(ctrlrs, c2GoController(ctrlrPtr))
+			ctrlrPtr = ctrlrPtr.next
+		}
+
+		nsPtr := retPtr.nss
+		for nsPtr != nil {
+			defer C.free(unsafe.Pointer(nsPtr))
+			nss = append(nss, c2GoNamespace(nsPtr))
+			nsPtr = nsPtr.next
+		}
+
+		return ctrlrs, nss, nil
+	}
+
+	return nil, nil, fmt.Errorf(
+		"%s failed, rc: %d, %s",
+		failLocation,
+		retPtr.rc,
+		C.GoString(&retPtr.err[0]))
+}
+
 // Discover calls C.nvme_discover which returns
 // pointers to single linked list of ctrlr_t and ns_t structs.
 // These are converted to slices of Controller and Namespace structs.
@@ -97,61 +130,38 @@ func c2GoNamespace(ns *C.struct_ns_t) Namespace {
 // \return ([]Controllers, []Namespace, nil) on success,
 //         (nil, nil, error) otherwise
 func Discover() ([]Controller, []Namespace, error) {
+	failLocation := "NVMe Discover(): C.nvme_discover"
+
 	if retPtr := C.nvme_discover(); retPtr != nil {
-		var ctrlrs []Controller
-		var nss []Namespace
-
-		if retPtr.rc == 0 {
-			ctrlrPtr := retPtr.ctrlrs
-			for ctrlrPtr != nil {
-				defer C.free(unsafe.Pointer(ctrlrPtr))
-				ctrlrs = append(ctrlrs, c2GoController(ctrlrPtr))
-				ctrlrPtr = ctrlrPtr.next
-			}
-
-			nsPtr := retPtr.nss
-			for nsPtr != nil {
-				defer C.free(unsafe.Pointer(nsPtr))
-				nss = append(nss, c2GoNamespace(nsPtr))
-				nsPtr = nsPtr.next
-			}
-
-			return ctrlrs, nss, nil
-		}
-
-		return nil, nil, fmt.Errorf(
-			"NVMe Discover(): C.nvme_discover failed, rc: %d, %s",
-			retPtr.rc,
-			retPtr.err)
+		return processReturn(retPtr, failLocation)
 	}
 
 	return nil, nil, fmt.Errorf(
-		"NVMe Discover(): C.nvme_discover unexpectedly returned NULL")
+		"%s unexpectedly returned NULL", failLocation)
 }
 
 // Update calls C.nvme_fwupdate to update controller firmware image.
 //
 // \ctrlrID Controller ID to perform update on
-// \path Local filesystem path to retrieve firmware image from
-// \return nil on success, error otherwise
-func Update(ctrlrID int32, path string, slot int32) error {
+// \path Filesystem path to retrieve firmware image from
+// \slot Firmware slot/register to upload to on controller
+// \return ([]Controllers, []Namespace, nil) on success,
+//         (nil, nil, error) otherwise
+func Update(ctrlrID int32, path string, slot int32) (
+	[]Controller, []Namespace, error) {
+
 	csPath := C.CString(path)
 	defer C.free(unsafe.Pointer(csPath))
 
+	failLocation := "NVMe Update(): C.nvme_fwupdate"
+
 	retPtr := C.nvme_fwupdate(C.uint(ctrlrID), csPath, C.uint(slot))
 	if retPtr != nil {
-		if retPtr.rc == 0 {
-			return nil
-		}
-
-		return fmt.Errorf(
-			"NVMe Update(): C.nvme_fwupdate failed, rc: %d, %s",
-			retPtr.rc,
-			C.GoString(&retPtr.err[0]))
+		return processReturn(retPtr, failLocation)
 	}
 
-	return fmt.Errorf(
-		"NVMe Update(): C.nvme_fwupdate unexpectedly returned NULL")
+	return nil, nil, fmt.Errorf(
+		"%s unexpectedly returned NULL", failLocation)
 }
 
 // Cleanup unlinks and detaches any controllers or namespaces.

@@ -290,13 +290,10 @@ nvme_fwupdate(unsigned int ctrlr_id, char *path, unsigned int slot)
 	ctrlr_entry = g_controllers;
 	ret = init_ret();
 
-	printf("looking to update controller %d\n", ctrlr_id);
-
 	while (ctrlr_entry) {
 		cdata = spdk_nvme_ctrlr_get_data(ctrlr_entry->ctrlr);
 
 		if (cdata->cntlid == ctrlr_id) {
-			printf("found controller %d\n", cdata->cntlid);
 			break;
 		}
 
@@ -368,6 +365,7 @@ nvme_fwupdate(unsigned int ctrlr_id, char *path, unsigned int slot)
 	spdk_dma_free(fw_image);
 
 	ret->rc = rc;
+	collect(ret);
 
 	return ret;
 }

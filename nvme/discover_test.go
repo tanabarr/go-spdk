@@ -65,7 +65,7 @@ func TestDiscover(t *testing.T) {
 		}
 
 		// if err := spdk.InitSPDKEnv(); err != nil {
-			// t.Fatal(err.Error())
+		// t.Fatal(err.Error())
 		// }
 		//_, _, err = Discover()
 		err = Update(0, "")
