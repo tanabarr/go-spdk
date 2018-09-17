@@ -42,7 +42,6 @@ import "C"
 import (
 	"fmt"
 	"unsafe"
-	//	"go-spdk/spdk"
 )
 
 // Controller struct mirrors C.struct_ctrlr_t and
