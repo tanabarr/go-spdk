@@ -48,42 +48,23 @@ func TestDiscover(t *testing.T) {
 		{
 			shouldSucceed: true,
 		},
-		//{
-		//	shouldSucceed: true,
-		//},
 	}
 
 	for i, tt := range tests {
 		if err := spdk.InitSPDKEnv(); err != nil {
 			t.Fatal(err.Error())
 		}
-		//var entries []Namespace
-		// err := Update(0, "")
+
 		_, _, err := Discover()
 		if checkFailure(tt.shouldSucceed, err) != nil {
 			t.Errorf("case %d: %v", i, err)
 		}
 
-		// if err := spdk.InitSPDKEnv(); err != nil {
-		// t.Fatal(err.Error())
-		// }
-		//_, _, err = Discover()
-		err = Update(0, "")
+		_, _, err = Update(0, "", 0)
 		if checkFailure(tt.shouldSucceed, err) != nil {
 			t.Errorf("case %d: %v", i, err)
 		}
 
 		Cleanup()
-
-		//fmt.Println("Discovered NVMe devices: ")
-		//for _, e := range entries {
-		//	fmt.Printf(
-		//		"controller (model/serial): %v/%v, namespace: %v, size: %v\n",
-		//		e.CtrlrModel, e.CtrlrSerial, e.Id, e.Size)
-		//}
-
-		// if tt.shouldSucceed && len != expLen {
-		//			t.Errorf("case %d: expected length %d, got %d", i, expLen, len)
-		//		}
 	}
 }

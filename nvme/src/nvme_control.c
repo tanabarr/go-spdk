@@ -30,25 +30,25 @@
 
 struct ctrlr_entry {
 	struct spdk_nvme_ctrlr	*ctrlr;
-	const char 				*tr_addr;
-	struct ctrlr_entry    	*next;
+	const char		*tr_addr;
+	struct ctrlr_entry	*next;
 };
 
 struct ns_entry {
 	struct spdk_nvme_ctrlr	*ctrlr;
-	struct spdk_nvme_ns		*ns;
-	struct ns_entry			*next;
+	struct spdk_nvme_ns	*ns;
+	struct ns_entry		*next;
 	struct spdk_nvme_qpair	*qpair;
 };
 
-static struct ctrlr_entry 	*g_controllers = NULL;
-static struct ns_entry		*g_namespaces = NULL;
+static struct ctrlr_entry	*g_controllers;
+static struct ns_entry		*g_namespaces;
 
 static void
 register_ns(struct spdk_nvme_ctrlr *ctrlr, struct spdk_nvme_ns *ns)
 {
-	struct ns_entry *entry;
-	const struct spdk_nvme_ctrlr_data *cdata;
+	struct ns_entry				*entry;
+	const struct spdk_nvme_ctrlr_data	*cdata;
 
 	/*
 	 * spdk_nvme_ctrlr is the logical abstraction in SPDK for an NVMe
@@ -62,8 +62,7 @@ register_ns(struct spdk_nvme_ctrlr *ctrlr, struct spdk_nvme_ns *ns)
 
 	if (!spdk_nvme_ns_is_active(ns)) {
 		printf("Controller %-20.20s (%-20.20s): Skipping inactive NS %u\n",
-		       cdata->mn, cdata->sn,
-		       spdk_nvme_ns_get_id(ns));
+			cdata->mn, cdata->sn, spdk_nvme_ns_get_id(ns));
 		return;
 	}
 
@@ -88,11 +87,12 @@ probe_cb(void *cb_ctx, const struct spdk_nvme_transport_id *trid,
 
 static void
 attach_cb(void *cb_ctx, const struct spdk_nvme_transport_id *trid,
-	  struct spdk_nvme_ctrlr *ctrlr, const struct spdk_nvme_ctrlr_opts *opts)
+	  struct spdk_nvme_ctrlr *ctrlr,
+	  const struct spdk_nvme_ctrlr_opts *opts)
 {
-	int nsid, num_ns;
-	struct ctrlr_entry *entry;
-	struct spdk_nvme_ns *ns;
+	int			nsid, num_ns;
+	struct ctrlr_entry	*entry;
+	struct spdk_nvme_ns	*ns;
 
 	entry = malloc(sizeof(struct ctrlr_entry));
 	if (entry == NULL) {
@@ -116,9 +116,8 @@ attach_cb(void *cb_ctx, const struct spdk_nvme_transport_id *trid,
 	num_ns = spdk_nvme_ctrlr_get_num_ns(ctrlr);
 	for (nsid = 1; nsid <= num_ns; nsid++) {
 		ns = spdk_nvme_ctrlr_get_ns(ctrlr, nsid);
-		if (ns == NULL) {
+		if (ns == NULL)
 			continue;
-		}
 		register_ns(ctrlr, ns);
 	}
 }
@@ -126,8 +125,9 @@ attach_cb(void *cb_ctx, const struct spdk_nvme_transport_id *trid,
 static struct ret_t *
 init_ret(void)
 {
-	struct ret_t *ret = malloc(sizeof(struct ret_t));
+	struct ret_t *ret;
 
+	ret = malloc(sizeof(struct ret_t));
 	ret->rc = 0;
 	ret->ctrlrs = NULL;
 	ret->nss = NULL;
@@ -148,36 +148,45 @@ check_size(int written, int max, char *msg, struct ret_t *ret)
 static void
 collect(struct ret_t *ret)
 {
-	struct ns_entry *ns_entry = g_namespaces;
-	struct ctrlr_entry *ctrlr_entry = g_controllers;
-	const struct spdk_nvme_ctrlr_data *cdata;
-	int written;
+	struct ns_entry				*ns_entry;
+	struct ctrlr_entry			*ctrlr_entry;
+	const struct spdk_nvme_ctrlr_data	*cdata;
+	int					written;
+
+	ns_entry = g_namespaces;
+	ctrlr_entry = g_controllers;
 
 	while (ns_entry) {
-		struct ns_t *ns_tmp = malloc(sizeof(struct ns_t));
-	    if (ns_tmp == NULL) {
-	    	perror("ns_t malloc");
-	    	exit(1);
-	    }
+		struct ns_t *ns_tmp;
+
+		ns_tmp = malloc(sizeof(struct ns_t));
+
+		if (ns_tmp == NULL) {
+			perror("ns_t malloc");
+			exit(1);
+		}
 
 		cdata = spdk_nvme_ctrlr_get_data(ns_entry->ctrlr);
 
 		ns_tmp->id = spdk_nvme_ns_get_id(ns_entry->ns);
-        // capacity in GBytes
+		// capacity in GBytes
 		ns_tmp->size = spdk_nvme_ns_get_size(ns_entry->ns) / 1000000000;
 		ns_tmp->ctrlr_id = cdata->cntlid;
-	    ns_tmp->next = ret->nss;
-	    ret->nss = ns_tmp;
+		ns_tmp->next = ret->nss;
+		ret->nss = ns_tmp;
 
 		ns_entry = ns_entry->next;
 	}
 
 	while (ctrlr_entry) {
-	    struct ctrlr_t *ctrlr_tmp = malloc(sizeof(struct ctrlr_t));
-	    if (ctrlr_tmp == NULL) {
+		struct ctrlr_t *ctrlr_tmp;
+
+		ctrlr_tmp = malloc(sizeof(struct ctrlr_t));
+
+		if (ctrlr_tmp == NULL) {
 			perror("ctrlr_t malloc");
 			exit(1);
-	    }
+		}
 
 		cdata = spdk_nvme_ctrlr_get_data(ctrlr_entry->ctrlr);
 
@@ -214,8 +223,8 @@ collect(struct ret_t *ret)
 		check_size(written, sizeof(ctrlr_tmp->tr_addr), "transport address truncated", ret);
 
 		ctrlr_tmp->id = cdata->cntlid;
-	    ctrlr_tmp->next = ret->ctrlrs;
-	    ret->ctrlrs = ctrlr_tmp;
+		ctrlr_tmp->next = ret->ctrlrs;
+		ret->ctrlrs = ctrlr_tmp;
 
 		ctrlr_entry = ctrlr_entry->next;
 	}
@@ -226,17 +235,22 @@ collect(struct ret_t *ret)
 static void
 cleanup(void)
 {
-	struct ns_entry *ns_entry = g_namespaces;
-	struct ctrlr_entry *ctrlr_entry = g_controllers;
+	struct ns_entry		*ns_entry;
+	struct ctrlr_entry	*ctrlr_entry;
+
+	ns_entry = g_namespaces;
+	ctrlr_entry = g_controllers;
 
 	while (ns_entry) {
 		struct ns_entry *next = ns_entry->next;
+
 		free(ns_entry);
 		ns_entry = next;
 	}
 
 	while (ctrlr_entry) {
 		struct ctrlr_entry *next = ctrlr_entry->next;
+
 		spdk_nvme_detach(ctrlr_entry->ctrlr);
 		free(ctrlr_entry);
 		ctrlr_entry = next;
@@ -246,7 +260,10 @@ cleanup(void)
 struct ret_t *
 nvme_discover(void)
 {
-	struct ret_t *ret = init_ret();
+	int 		rc;
+	struct ret_t	*ret;
+
+	ret = init_ret();
 
 	/*
 	 * Start the SPDK NVMe enumeration process.  probe_cb will be called
@@ -255,7 +272,8 @@ nvme_discover(void)
 	 *  called for each controller after the SPDK NVMe driver has completed
 	 *  initializing the controller we chose to attach.
 	 */
-	int rc = spdk_nvme_probe(NULL, NULL, probe_cb, attach_cb, NULL);
+	rc = spdk_nvme_probe(NULL, NULL, probe_cb, attach_cb, NULL);
+
 	if (rc != 0) {
 		fprintf(stderr, "spdk_nvme_probe() failed\n");
 		cleanup();
@@ -276,16 +294,16 @@ nvme_discover(void)
 struct ret_t *
 nvme_fwupdate(unsigned int ctrlr_id, char *path, unsigned int slot)
 {
-	int									rc = 1;
-	int									fd = -1;
-	unsigned int						size;
-	struct stat							fw_stat;
-	void								*fw_image;
+	int					rc = 1;
+	int					fd = -1;
+	unsigned int				size;
+	struct stat				fw_stat;
+	void					*fw_image;
 	enum spdk_nvme_fw_commit_action		commit_action;
-	struct spdk_nvme_status				status;
-	const struct spdk_nvme_ctrlr_data 	*cdata;
-	struct ctrlr_entry 					*ctrlr_entry;
-	struct ret_t 						*ret;
+	struct spdk_nvme_status			status;
+	const struct spdk_nvme_ctrlr_data	*cdata;
+	struct ctrlr_entry			*ctrlr_entry;
+	struct ret_t				*ret;
 
 	ctrlr_entry = g_controllers;
 	ret = init_ret();
@@ -293,9 +311,8 @@ nvme_fwupdate(unsigned int ctrlr_id, char *path, unsigned int slot)
 	while (ctrlr_entry) {
 		cdata = spdk_nvme_ctrlr_get_data(ctrlr_entry->ctrlr);
 
-		if (cdata->cntlid == ctrlr_id) {
+		if (cdata->cntlid == ctrlr_id)
 			break;
-		}
 
 		ctrlr_entry = ctrlr_entry->next;
 	}
@@ -355,7 +372,7 @@ nvme_fwupdate(unsigned int ctrlr_id, char *path, unsigned int slot)
 	commit_action = SPDK_NVME_FW_COMMIT_REPLACE_AND_ENABLE_IMG;
 	rc = spdk_nvme_ctrlr_update_firmware(ctrlr_entry->ctrlr, fw_image, size, slot, commit_action, &status);
 	if (rc == -ENXIO && status.sct == SPDK_NVME_SCT_COMMAND_SPECIFIC &&
-	    status.sc == SPDK_NVME_SC_FIRMWARE_REQ_CONVENTIONAL_RESET) {
+		status.sc == SPDK_NVME_SC_FIRMWARE_REQ_CONVENTIONAL_RESET) {
 		sprintf(ret->err, "conventional reset is needed to enable firmware !");
 	} else if (rc) {
 		sprintf(ret->err, "spdk_nvme_ctrlr_update_firmware failed");
@@ -375,105 +392,3 @@ nvme_cleanup()
 {
 	cleanup();
 }
-
-//static void
-//update_firmware_image(void)
-//{
-//	int					rc;
-//	int					fd = -1;
-//	int					slot;
-//	int					rc;
-//	int					fd = -1;
-//	unsigned int				size;
-//	struct stat				fw_stat;
-//	char					path[256];
-//	void					*fw_image;
-//	struct dev				*ctrlr;
-//	const struct spdk_nvme_ctrlr_data	*cdata;
-//	enum spdk_nvme_fw_commit_action		commit_action;
-//	struct spdk_nvme_status			status;
-//
-//	ctrlr = get_controller();
-//	if (ctrlr == NULL) {
-//		printf("Invalid controller PCI BDF.\n");
-//		return;
-//	}
-//
-//	cdata = ctrlr->cdata;
-//
-//	if (!cdata->oacs.firmware) {
-//		printf("Controller does not support firmware download and commit command\n");
-//		return;
-//	}
-//
-//	printf("Please Input The Path Of Firmware Image\n");
-//
-////	if (get_line(path, sizeof(path), stdin) == NULL) {
-////		printf("Invalid path setting\n");
-////		while (getchar() != '\n');
-////		return;
-////	}
-////
-//	fd = open(path, O_RDONLY);
-//	if (fd < 0) {
-//		perror("Open file failed");
-//		return;
-//	}
-//	rc = fstat(fd, &fw_stat);
-//	if (rc < 0) {
-//		printf("Fstat failed\n");
-//		close(fd);
-//		return;
-//	}
-//
-//	if (fw_stat.st_size % 4) {
-//		printf("Firmware image size is not multiple of 4\n");
-//		close(fd);
-//		return;
-//	}
-//
-//	size = fw_stat.st_size;
-//
-//	fw_image = spdk_dma_zmalloc(size, 4096, NULL);
-//	if (fw_image == NULL) {
-//		printf("Allocation error\n");
-//		close(fd);
-//		return;
-//	}
-//
-//	if (read(fd, fw_image, size) != ((ssize_t)(size))) {
-//		printf("Read firmware image failed\n");
-//		close(fd);
-//		spdk_dma_free(fw_image);
-//		return;
-//	}
-//	close(fd);
-//
-//	printf("Please Input Slot(0 - 7):\n");
-//	if (!scanf("%d", &slot)) {
-//		printf("Invalid Slot\n");
-//		spdk_dma_free(fw_image);
-//		while (getchar() != '\n');
-//		return;
-//	}
-//
-//	commit_action = SPDK_NVME_FW_COMMIT_REPLACE_AND_ENABLE_IMG;
-//	rc = spdk_nvme_ctrlr_update_firmware(ctrlr->ctrlr, fw_image, size, slot, commit_action, &status);
-//	if (rc == -ENXIO && status.sct == SPDK_NVME_SCT_COMMAND_SPECIFIC &&
-//	    status.sc == SPDK_NVME_SC_FIRMWARE_REQ_CONVENTIONAL_RESET) {
-//		printf("conventional reset is needed to enable firmware !\n");
-//	} else if (rc) {
-//		printf("spdk_nvme_ctrlr_update_firmware failed\n");
-//	} else {
-//		printf("spdk_nvme_ctrlr_update_firmware success\n");
-//	}
-//	spdk_dma_free(fw_image);
-//}
-//	spdk_env_opts_init(&opts);
-//	opts.name = "nvme_manage";
-//	opts.core_mask = "0x1";
-//	opts.shm_id = g_shm_id;
-//	if (spdk_env_init(&opts) < 0) {
-//		fprintf(stderr, "Unable to initialize SPDK env\n");
-//		return 1;
-//	}

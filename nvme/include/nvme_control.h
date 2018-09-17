@@ -25,26 +25,26 @@
 #define NVMECONTROL_H
 #include <stdbool.h>
 struct ctrlr_t {
-	int             id;
-	char            model[1024];
-	char            serial[1024];
-	char            tr_addr[SPDK_NVMF_TRADDR_MAX_LEN + 1];
-	char            fw_rev[1024];
-	struct ctrlr_t  *next;
+	int		id;
+	char		model[1024];
+	char		serial[1024];
+	char		tr_addr[SPDK_NVMF_TRADDR_MAX_LEN + 1];
+	char		fw_rev[1024];
+	struct ctrlr_t	*next;
 };
 struct ns_t {
-	int             id;
-	int             size;
-	int             ctrlr_id;
-	struct ns_t     *next;
+	int		id;
+	int		size;
+	int		ctrlr_id;
+	struct ns_t	*next;
 };
 struct ret_t {
-	int             rc;
-	struct ctrlr_t  *ctrlrs;
-	struct ns_t     *nss;
-	char            err[1024];
+	int		rc;
+	struct ctrlr_t	*ctrlrs;
+	struct ns_t	*nss;
+	char		err[1024];
 };
 struct ret_t *nvme_discover(void);
-struct ret_t *nvme_fwupdate(unsigned int, char *, unsigned int);
+struct ret_t *nvme_fwupdate(unsigned int ctrlr_id, char *path, unsigned int slot);
 void nvme_cleanup(void);
 #endif
