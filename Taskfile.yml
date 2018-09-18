@@ -12,7 +12,7 @@ tasks:
     dir: nvme
     cmds:
       - rm -f *.o *.so
-      - gcc -c -fpic -Iinclude src/*.c -lspdk
+      - gcc -Werror -g -Wshadow -Wall -Wno-missing-braces -c -fpic -Iinclude src/*.c -lspdk
       - gcc -shared -o libnvme_control.so *.o
 
   unit-tests:

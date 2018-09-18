@@ -140,7 +140,7 @@ static void
 check_size(int written, int max, char *msg, struct ret_t *ret)
 {
 	if (written >= max) {
-		snprintf(ret->err, sizeof(ret->err), msg);
+		snprintf(ret->err, sizeof(ret->err), "%s", msg);
 		ret->rc = 1;
 	}
 }
