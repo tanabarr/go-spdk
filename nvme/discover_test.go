@@ -26,7 +26,7 @@ import (
 	"fmt"
 	"testing"
 
-	"../spdk"
+	"github.com/daos-stack/go-spdk/spdk"
 )
 
 func checkFailure(shouldSucceed bool, err error) (rErr error) {
