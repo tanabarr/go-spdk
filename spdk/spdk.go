@@ -70,6 +70,7 @@ func InitSPDKEnv() error {
 
 	C.spdk_env_opts_init(opts)
 
+	opts.shm_id = 1
 	rc := C.spdk_env_init(opts)
 	if err := Rc2err("spdk_env_opts_init", rc); err != nil {
 		return err
